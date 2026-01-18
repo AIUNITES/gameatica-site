@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://aiunites.github.io/gameatica-site/sitemap.xml
