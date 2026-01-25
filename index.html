@@ -217,7 +217,7 @@
 
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="number">19</div>
+                <div class="number">25</div>
                 <div class="label">Games Available</div>
             </div>
             <div class="stat-item">
@@ -237,6 +237,7 @@
             <button class="filter-btn" data-cat="skill">⚡ Skill</button>
             <button class="filter-btn" data-cat="word">📝 Word</button>
             <button class="filter-btn" data-cat="strategy">🚀 Strategy</button>
+            <button class="filter-btn" data-cat="math">📐 Math</button>
         </div>
 
         <div class="games-grid" id="gamesGrid">
@@ -290,6 +291,14 @@
             
             // Strategy & Simulation
             { id: 'startrader', name: 'Star Trader', icon: '🚀', desc: 'Trade goods across the galaxy. Buy low, sell high, upgrade your ship!', tags: ['strategy', 'space'], cat: 'strategy' },
+            
+            // Math Learning Games
+            { id: 'algebra', name: 'Algebra Quest', icon: '🔤', desc: 'Solve equations from basic linear to quadratics. Master the art of x!', tags: ['math', 'algebra'], cat: 'math' },
+            { id: 'calculus', name: 'Calculus Challenge', icon: '∫', desc: 'Practice derivatives, integrals, and limits. Conquer calculus!', tags: ['math', 'calculus'], cat: 'math' },
+            { id: 'trig', name: 'Trig Master', icon: '📐', desc: 'Master the unit circle, identities, and trig equations.', tags: ['math', 'trigonometry'], cat: 'math' },
+            { id: 'mathspeed', name: 'Math Speed', icon: '⚡', desc: 'Race against the clock! Quick arithmetic challenges.', tags: ['math', 'speed'], cat: 'math' },
+            { id: 'geometry', name: 'Geometry Pro', icon: '📏', desc: 'Calculate areas, perimeters, volumes, and angles.', tags: ['math', 'geometry'], cat: 'math' },
+            { id: 'fractions', name: 'Fraction Frenzy', icon: '🥧', desc: 'Add, subtract, multiply, divide and simplify fractions.', tags: ['math', 'fractions'], cat: 'math' },
         ];
 
         function renderGames(filter = 'all') {

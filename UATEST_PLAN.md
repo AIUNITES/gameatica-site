@@ -37,6 +37,12 @@
 | Sliding Puzzle | games/sliding.html | Tile slider | ✅ |
 | Sudoku | games/sudoku.html | Number logic puzzle | ✅ |
 | Star Trader | games/startrader.html | Space trading/exploration | ✅ |
+| Algebra Quest | games/algebra.html | Algebra equation solving | ✅ |
+| Calculus Challenge | games/calculus.html | Derivatives/integrals/limits | ✅ |
+| Trig Master | games/trig.html | Unit circle & trigonometry | ✅ |
+| Math Speed | games/mathspeed.html | Timed arithmetic | ✅ |
+| Geometry Pro | games/geometry.html | Areas/volumes/angles | ✅ |
+| Fraction Frenzy | games/fractions.html | Fraction operations | ✅ |
 
 ---
 
@@ -45,8 +51,8 @@
 ### 🎮 Arcade Hub (index.html)
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Game grid display | ✅ | 18 games with icons |
-| Category filters | ✅ | All/Arcade/Puzzle/Skill/Word |
+| Game grid display | ✅ | 25 games with icons |
+| Category filters | ✅ | All/Arcade/Puzzle/Skill/Word/Strategy/Math |
 | Player name system | ✅ | Stored in localStorage |
 | Play count stats | ✅ | Tracks total plays |
 | AIUNITES Webring | ✅ | Top navigation bar |
@@ -292,7 +298,7 @@
 ## Test Scenarios
 
 ### Hub Tests
-- [ ] All 19 game cards display correctly
+- [ ] All 25 game cards display correctly
 - [ ] Category filter buttons work
 - [ ] Player name changes and persists
 - [ ] Play count updates after playing games
@@ -352,6 +358,7 @@
 | 1.0.0 | Jan 17, 2026 | Initial landing page |
 | 2.0.0 | Jan 25, 2026 | Full arcade with 18 games |
 | 2.1.0 | Jan 25, 2026 | Added Star Trader (19 games total) |
+| 2.2.0 | Jan 25, 2026 | Added 6 Math Learning Games (25 games total) |
 
 ---
 

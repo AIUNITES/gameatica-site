@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Algebra Quest - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔤</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .equation {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+            color: var(--white);
+        }
+        .difficulty-label {
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+        .answer-input {
+            width: 150px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: var(--white);
+            font-family: 'Courier New', monospace;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.25rem;
+            min-height: 40px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .hint-text {
+            color: var(--gray-light);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+        .difficulty-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .diff-btn {
+            padding: 8px 16px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .diff-btn:hover {
+            border-color: var(--primary);
+            color: var(--white);
+        }
+        .diff-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .streak-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .streak-flames {
+            font-size: 1.5rem;
+        }
+        .topic-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🔤 Algebra Quest</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Level</div>
+                <div class="value" id="level">1</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="difficulty-selector">
+            <button class="diff-btn active" data-diff="easy">Easy</button>
+            <button class="diff-btn" data-diff="medium">Medium</button>
+            <button class="diff-btn" data-diff="hard">Hard</button>
+            <button class="diff-btn" data-diff="expert">Expert</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="streak-display" id="streakDisplay" style="display:none;">
+                    <span class="streak-flames">🔥</span>
+                    <span id="streakText">3 in a row!</span>
+                </div>
+                <div class="difficulty-label" id="diffLabel">Basic Linear Equation</div>
+                <div class="equation" id="equation">2x + 3 = 7</div>
+                <div style="margin-top:20px;">
+                    <span style="font-size:1.25rem;">x = </span>
+                    <input type="text" class="answer-input" id="answerInput" placeholder="?" autofocus>
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-text" id="hint"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="skipBtn">⏭️ Skip</button>
+            <button class="btn btn-primary" id="submitBtn">Check Answer</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Solve the equation to find the value of x</li>
+                <li>Enter your answer and press Enter or click Check</li>
+                <li>Build a streak for bonus points!</li>
+                <li>Higher difficulties = more points</li>
+            </ul>
+            <div class="topic-list">
+                Topics: Linear equations • Quadratics • Factoring • Systems • Polynomials
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'algebra';
+        
+        let score = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let level = 1;
+        let currentProblem = null;
+        let hintsUsed = 0;
+        let difficulty = 'easy';
+        let problemsSolved = 0;
+        
+        const PROBLEMS = {
+            easy: [
+                // Basic linear equations
+                () => {
+                    const a = randInt(2, 10);
+                    const x = randInt(1, 10);
+                    const b = randInt(1, 20);
+                    const c = a * x + b;
+                    return { eq: `${a}x + ${b} = ${c}`, answer: x, hint: `Subtract ${b} from both sides, then divide by ${a}`, type: 'Basic Linear' };
+                },
+                () => {
+                    const a = randInt(2, 10);
+                    const x = randInt(1, 10);
+                    const b = randInt(1, 15);
+                    const c = a * x - b;
+                    return { eq: `${a}x - ${b} = ${c}`, answer: x, hint: `Add ${b} to both sides, then divide by ${a}`, type: 'Basic Linear' };
+                },
+                () => {
+                    const x = randInt(2, 12);
+                    const a = randInt(2, 8);
+                    return { eq: `x ÷ ${a} = ${x}`, answer: x * a, hint: `Multiply both sides by ${a}`, type: 'Division' };
+                },
+                () => {
+                    const a = randInt(2, 6);
+                    const x = randInt(1, 10);
+                    const b = randInt(1, 10);
+                    const c = randInt(1, 5);
+                    const result = a * x + b - c;
+                    return { eq: `${a}x + ${b} - ${c} = ${result}`, answer: x, hint: 'Combine like terms first', type: 'Simplify First' };
+                }
+            ],
+            medium: [
+                // Two-step equations with negatives
+                () => {
+                    const a = randInt(2, 8);
+                    const x = randInt(-10, 10);
+                    const b = randInt(1, 15);
+                    const c = a * x + b;
+                    return { eq: `${a}x + ${b} = ${c}`, answer: x, hint: `Isolate x by subtracting ${b} then dividing by ${a}`, type: 'Linear (with negatives)' };
+                },
+                // Variables on both sides
+                () => {
+                    const a = randInt(3, 8);
+                    const b = randInt(1, a - 1);
+                    const x = randInt(1, 10);
+                    const c = (a - b) * x;
+                    return { eq: `${a}x = ${b}x + ${c}`, answer: x, hint: `Subtract ${b}x from both sides`, type: 'Variables Both Sides' };
+                },
+                // Distributive property
+                () => {
+                    const a = randInt(2, 5);
+                    const b = randInt(1, 8);
+                    const x = randInt(1, 8);
+                    const c = a * (x + b);
+                    return { eq: `${a}(x + ${b}) = ${c}`, answer: x, hint: `Distribute first: ${a}x + ${a * b} = ${c}`, type: 'Distributive' };
+                },
+                // Fractions
+                () => {
+                    const a = randInt(2, 6);
+                    const x = randInt(2, 10) * a; // Ensure whole number
+                    const result = x / a;
+                    return { eq: `x/${a} = ${result}`, answer: x, hint: `Multiply both sides by ${a}`, type: 'Simple Fractions' };
+                }
+            ],
+            hard: [
+                // Quadratic (factored form)
+                () => {
+                    const r1 = randInt(1, 8);
+                    const r2 = randInt(1, 8);
+                    const b = -(r1 + r2);
+                    const c = r1 * r2;
+                    const eq = `x² ${b >= 0 ? '+' : '-'} ${Math.abs(b)}x + ${c} = 0`;
+                    return { eq: eq, answer: r1, hint: `Factor: (x - ${r1})(x - ${r2}) = 0. Either root works!`, type: 'Quadratic', alt: r2 };
+                },
+                // Quadratic (difference of squares)
+                () => {
+                    const a = randInt(2, 10);
+                    const eq = `x² - ${a * a} = 0`;
+                    return { eq: eq, answer: a, hint: `Factor as (x + ${a})(x - ${a}) = 0`, type: 'Difference of Squares', alt: -a };
+                },
+                // Systems (substitution-ready)
+                () => {
+                    const x = randInt(1, 8);
+                    const y = randInt(1, 8);
+                    const a1 = randInt(1, 4);
+                    const b1 = randInt(1, 4);
+                    const c1 = a1 * x + b1 * y;
+                    return { eq: `${a1}x + ${b1}(${y}) = ${c1}`, answer: x, hint: `Substitute y = ${y} and solve for x`, type: 'Systems Preview' };
+                },
+                // Complex distribution
+                () => {
+                    const a = randInt(2, 4);
+                    const b = randInt(1, 5);
+                    const c = randInt(2, 4);
+                    const d = randInt(1, 5);
+                    const x = randInt(1, 5);
+                    const result = a * (x + b) + c * (x - d);
+                    return { eq: `${a}(x + ${b}) + ${c}(x - ${d}) = ${result}`, answer: x, hint: 'Distribute both terms, combine like terms', type: 'Double Distribution' };
+                }
+            ],
+            expert: [
+                // Quadratic formula needed
+                () => {
+                    const x = randInt(1, 6);
+                    const a = 1;
+                    const b = randInt(-10, -2);
+                    const c = x * (x + b);
+                    return { eq: `x² + ${b}x = ${c}`, answer: x, hint: 'Rearrange to ax² + bx + c = 0, then factor or use quadratic formula', type: 'Quadratic Rearrange' };
+                },
+                // Rational equations
+                () => {
+                    const x = randInt(2, 8);
+                    const a = randInt(2, 5);
+                    const b = randInt(1, 10);
+                    const result = (a * x + b) / x;
+                    return { eq: `(${a}x + ${b})/x = ${result}`, answer: x, hint: 'Multiply both sides by x to clear the fraction', type: 'Rational Equation' };
+                },
+                // Absolute value
+                () => {
+                    const x = randInt(1, 10);
+                    const a = randInt(1, 8);
+                    const result = Math.abs(x - a);
+                    return { eq: `|x - ${a}| = ${result}`, answer: a + result, hint: `x - ${a} = ±${result}`, type: 'Absolute Value', alt: a - result };
+                },
+                // Polynomial factoring
+                () => {
+                    const r = randInt(1, 5);
+                    const a = randInt(2, 4);
+                    return { eq: `x³ - ${r * r * r} = 0`, answer: r, hint: 'Difference of cubes: a³ - b³ = (a-b)(a² + ab + b²)', type: 'Cubic' };
+                }
+            ]
+        };
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function generateProblem() {
+            const problems = PROBLEMS[difficulty];
+            const generator = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem = generator();
+            
+            document.getElementById('equation').textContent = currentProblem.eq;
+            document.getElementById('diffLabel').textContent = currentProblem.type;
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('hint').textContent = '';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function checkAnswer() {
+            const input = document.getElementById('answerInput').value.trim();
+            const userAnswer = parseFloat(input);
+            
+            if (isNaN(userAnswer)) {
+                document.getElementById('feedback').textContent = 'Please enter a number!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            const isCorrect = userAnswer === currentProblem.answer || 
+                              (currentProblem.alt !== undefined && userAnswer === currentProblem.alt);
+            
+            if (isCorrect) {
+                // Calculate points based on difficulty and streak
+                const diffMultiplier = { easy: 1, medium: 2, hard: 3, expert: 5 };
+                const basePoints = 100 * diffMultiplier[difficulty];
+                const streakBonus = Math.min(streak, 10) * 10;
+                const points = basePoints + streakBonus;
+                
+                score += points;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                problemsSolved++;
+                
+                // Level up every 5 problems
+                if (problemsSolved % 5 === 0) {
+                    level++;
+                    document.getElementById('level').textContent = level;
+                }
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                
+                updateStreakDisplay();
+                GameUtils.playSound('point');
+                GameUtils.vibrate(30);
+                
+                // Next problem after delay
+                setTimeout(generateProblem, 1200);
+            } else {
+                document.getElementById('feedback').textContent = `✗ Not quite. The answer was ${currentProblem.answer}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                
+                streak = 0;
+                updateStreakDisplay();
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('hint').textContent = '💡 ' + currentProblem.hint;
+            hintsUsed++;
+        }
+        
+        function skipProblem() {
+            document.getElementById('feedback').textContent = `Skipped. Answer: ${currentProblem.answer}`;
+            document.getElementById('feedback').className = 'feedback';
+            streak = 0;
+            updateStreakDisplay();
+            setTimeout(generateProblem, 1500);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        function updateStreakDisplay() {
+            const display = document.getElementById('streakDisplay');
+            if (streak >= 3) {
+                display.style.display = 'flex';
+                const flames = '🔥'.repeat(Math.min(Math.floor(streak / 3), 5));
+                document.querySelector('.streak-flames').textContent = flames;
+                document.getElementById('streakText').textContent = `${streak} in a row!`;
+            } else {
+                display.style.display = 'none';
+            }
+        }
+        
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        document.getElementById('submitBtn').addEventListener('click', checkAnswer);
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('skipBtn').addEventListener('click', skipProblem);
+        
+        // Difficulty selector
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.dataset.diff;
+                generateProblem();
+            });
+        });
+        
+        // End game after time or allow infinite practice
+        function endGame() {
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { maxStreak, problemsSolved, difficulty, hintsUsed }
+            });
+        }
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

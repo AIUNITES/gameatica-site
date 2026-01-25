@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Geometry Pro - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📏</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 20px;
+        }
+        .shape-display {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .shape-svg {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .problem-text {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--white);
+        }
+        .given-info {
+            font-size: 1rem;
+            color: var(--gray-light);
+            margin-bottom: 20px;
+        }
+        .formula-hint {
+            font-size: 0.85rem;
+            color: var(--gray);
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+        .answer-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .answer-input {
+            width: 120px;
+            padding: 12px 15px;
+            font-size: 1.3rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: var(--white);
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .unit-label {
+            color: var(--gray-light);
+            font-size: 1.1rem;
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .formula-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        .formula-card.visible { display: block; }
+        .formula-card h4 { color: var(--gray-light); margin-bottom: 10px; font-size: 0.9rem; }
+        .formula-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        .formula-item {
+            background: rgba(0,0,0,0.2);
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📏 Geometry Pro</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="area">Area</button>
+            <button class="topic-btn" data-topic="perimeter">Perimeter</button>
+            <button class="topic-btn" data-topic="volume">Volume</button>
+            <button class="topic-btn" data-topic="angles">Angles</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="shape-display" id="shapeDisplay">
+                    <svg class="shape-svg" viewBox="0 0 200 200" id="shapeSvg"></svg>
+                </div>
+                <div class="problem-text" id="problemText">Find the area of the rectangle</div>
+                <div class="given-info" id="givenInfo">Length = 8, Width = 5</div>
+                <div class="formula-hint" id="formulaHint">Formula: A = l × w</div>
+                <div class="answer-section">
+                    <input type="number" class="answer-input" id="answerInput" placeholder="?" step="any" autofocus>
+                    <span class="unit-label" id="unitLabel">sq units</span>
+                </div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="formulaBtn">📖 Formulas</button>
+            <button class="btn btn-secondary" id="skipBtn">⏭️ Skip</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+        </div>
+
+        <div class="formula-card" id="formulaCard">
+            <h4>Formula Reference</h4>
+            <div class="formula-list">
+                <div class="formula-item">Rectangle: A = l × w</div>
+                <div class="formula-item">Triangle: A = ½bh</div>
+                <div class="formula-item">Circle: A = πr²</div>
+                <div class="formula-item">Trapezoid: A = ½(a+b)h</div>
+                <div class="formula-item">Rectangle: P = 2l + 2w</div>
+                <div class="formula-item">Circle: C = 2πr</div>
+                <div class="formula-item">Cube: V = s³</div>
+                <div class="formula-item">Box: V = lwh</div>
+                <div class="formula-item">Cylinder: V = πr²h</div>
+                <div class="formula-item">Sphere: V = (4/3)πr³</div>
+                <div class="formula-item">Triangle angles = 180°</div>
+                <div class="formula-item">Quadrilateral = 360°</div>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Area:</strong> Rectangles, triangles, circles, trapezoids</li>
+                <li><strong>Perimeter:</strong> Perimeter and circumference</li>
+                <li><strong>Volume:</strong> Cubes, boxes, cylinders, spheres</li>
+                <li><strong>Angles:</strong> Triangle angles, supplementary, complementary</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'geometry';
+        
+        let score = 0;
+        let correctCount = 0;
+        let totalCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let topic = 'area';
+        let currentProblem = null;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function roundTo(num, places) {
+            return Math.round(num * Math.pow(10, places)) / Math.pow(10, places);
+        }
+        
+        const PROBLEMS = {
+            area: [
+                () => {
+                    const l = randInt(3, 15);
+                    const w = randInt(3, 15);
+                    return {
+                        text: 'Find the area of the rectangle',
+                        given: `Length = ${l}, Width = ${w}`,
+                        formula: 'A = l × w',
+                        answer: l * w,
+                        unit: 'sq units',
+                        shape: drawRect(l, w)
+                    };
+                },
+                () => {
+                    const b = randInt(4, 16);
+                    const h = randInt(3, 12);
+                    return {
+                        text: 'Find the area of the triangle',
+                        given: `Base = ${b}, Height = ${h}`,
+                        formula: 'A = ½ × base × height',
+                        answer: (b * h) / 2,
+                        unit: 'sq units',
+                        shape: drawTriangle(b, h)
+                    };
+                },
+                () => {
+                    const r = randInt(2, 10);
+                    return {
+                        text: 'Find the area of the circle (use π ≈ 3.14)',
+                        given: `Radius = ${r}`,
+                        formula: 'A = πr²',
+                        answer: roundTo(3.14 * r * r, 2),
+                        unit: 'sq units',
+                        shape: drawCircle(r),
+                        tolerance: 0.5
+                    };
+                },
+                () => {
+                    const a = randInt(5, 12);
+                    const b = randInt(8, 16);
+                    const h = randInt(4, 10);
+                    return {
+                        text: 'Find the area of the trapezoid',
+                        given: `Top = ${a}, Bottom = ${b}, Height = ${h}`,
+                        formula: 'A = ½(a + b) × h',
+                        answer: ((a + b) * h) / 2,
+                        unit: 'sq units',
+                        shape: drawTrapezoid(a, b, h)
+                    };
+                },
+                () => {
+                    const s = randInt(4, 12);
+                    return {
+                        text: 'Find the area of the square',
+                        given: `Side = ${s}`,
+                        formula: 'A = s²',
+                        answer: s * s,
+                        unit: 'sq units',
+                        shape: drawSquare(s)
+                    };
+                }
+            ],
+            perimeter: [
+                () => {
+                    const l = randInt(5, 15);
+                    const w = randInt(3, 12);
+                    return {
+                        text: 'Find the perimeter of the rectangle',
+                        given: `Length = ${l}, Width = ${w}`,
+                        formula: 'P = 2l + 2w',
+                        answer: 2 * l + 2 * w,
+                        unit: 'units',
+                        shape: drawRect(l, w)
+                    };
+                },
+                () => {
+                    const r = randInt(3, 12);
+                    return {
+                        text: 'Find the circumference (use π ≈ 3.14)',
+                        given: `Radius = ${r}`,
+                        formula: 'C = 2πr',
+                        answer: roundTo(2 * 3.14 * r, 2),
+                        unit: 'units',
+                        shape: drawCircle(r),
+                        tolerance: 0.5
+                    };
+                },
+                () => {
+                    const a = randInt(3, 10);
+                    const b = randInt(3, 10);
+                    const c = randInt(3, 10);
+                    return {
+                        text: 'Find the perimeter of the triangle',
+                        given: `Sides: ${a}, ${b}, ${c}`,
+                        formula: 'P = a + b + c',
+                        answer: a + b + c,
+                        unit: 'units',
+                        shape: drawTriangleGeneric()
+                    };
+                },
+                () => {
+                    const s = randInt(4, 15);
+                    return {
+                        text: 'Find the perimeter of the square',
+                        given: `Side = ${s}`,
+                        formula: 'P = 4s',
+                        answer: 4 * s,
+                        unit: 'units',
+                        shape: drawSquare(s)
+                    };
+                }
+            ],
+            volume: [
+                () => {
+                    const s = randInt(2, 8);
+                    return {
+                        text: 'Find the volume of the cube',
+                        given: `Side = ${s}`,
+                        formula: 'V = s³',
+                        answer: s * s * s,
+                        unit: 'cubic units',
+                        shape: drawCube()
+                    };
+                },
+                () => {
+                    const l = randInt(3, 10);
+                    const w = randInt(2, 8);
+                    const h = randInt(2, 8);
+                    return {
+                        text: 'Find the volume of the box',
+                        given: `L = ${l}, W = ${w}, H = ${h}`,
+                        formula: 'V = l × w × h',
+                        answer: l * w * h,
+                        unit: 'cubic units',
+                        shape: drawBox()
+                    };
+                },
+                () => {
+                    const r = randInt(2, 7);
+                    const h = randInt(4, 12);
+                    return {
+                        text: 'Find the volume of the cylinder (use π ≈ 3.14)',
+                        given: `Radius = ${r}, Height = ${h}`,
+                        formula: 'V = πr²h',
+                        answer: roundTo(3.14 * r * r * h, 2),
+                        unit: 'cubic units',
+                        shape: drawCylinder(),
+                        tolerance: 1
+                    };
+                },
+                () => {
+                    const r = randInt(2, 6);
+                    return {
+                        text: 'Find the volume of the sphere (use π ≈ 3.14)',
+                        given: `Radius = ${r}`,
+                        formula: 'V = (4/3)πr³',
+                        answer: roundTo((4/3) * 3.14 * r * r * r, 2),
+                        unit: 'cubic units',
+                        shape: drawSphere(),
+                        tolerance: 1
+                    };
+                }
+            ],
+            angles: [
+                () => {
+                    const a = randInt(30, 80);
+                    const b = randInt(30, 80);
+                    const c = 180 - a - b;
+                    return {
+                        text: 'Find the missing angle in the triangle',
+                        given: `Two angles are ${a}° and ${b}°`,
+                        formula: 'Triangle angles sum to 180°',
+                        answer: c,
+                        unit: '°',
+                        shape: drawTriangleAngles(a, b)
+                    };
+                },
+                () => {
+                    const a = randInt(20, 70);
+                    return {
+                        text: 'Find the complement of the angle',
+                        given: `Angle = ${a}°`,
+                        formula: 'Complementary angles sum to 90°',
+                        answer: 90 - a,
+                        unit: '°',
+                        shape: drawAngle(a)
+                    };
+                },
+                () => {
+                    const a = randInt(30, 150);
+                    return {
+                        text: 'Find the supplement of the angle',
+                        given: `Angle = ${a}°`,
+                        formula: 'Supplementary angles sum to 180°',
+                        answer: 180 - a,
+                        unit: '°',
+                        shape: drawAngle(a)
+                    };
+                },
+                () => {
+                    const angles = [randInt(60, 100), randInt(60, 100), randInt(60, 100)];
+                    const d = 360 - angles.reduce((a,b) => a+b, 0);
+                    return {
+                        text: 'Find the missing angle in the quadrilateral',
+                        given: `Three angles: ${angles.join('°, ')}°`,
+                        formula: 'Quadrilateral angles sum to 360°',
+                        answer: d,
+                        unit: '°',
+                        shape: drawQuad()
+                    };
+                }
+            ]
+        };
+        
+        // Shape drawing functions
+        function drawRect(l, w) {
+            const scale = Math.min(150/l, 120/w);
+            const width = l * scale;
+            const height = w * scale;
+            return `
+                <rect x="${100-width/2}" y="${100-height/2}" width="${width}" height="${height}" 
+                      fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="${100+height/2+20}" text-anchor="middle" fill="#888" font-size="14">${l}</text>
+                <text x="${100+width/2+15}" y="100" text-anchor="start" fill="#888" font-size="14">${w}</text>
+            `;
+        }
+        
+        function drawSquare(s) {
+            const size = Math.min(130, s * 10);
+            return `
+                <rect x="${100-size/2}" y="${100-size/2}" width="${size}" height="${size}" 
+                      fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="${100+size/2+20}" text-anchor="middle" fill="#888" font-size="14">${s}</text>
+            `;
+        }
+        
+        function drawTriangle(b, h) {
+            const baseWidth = Math.min(160, b * 10);
+            const height = Math.min(140, h * 10);
+            return `
+                <polygon points="100,${100-height/2} ${100-baseWidth/2},${100+height/2} ${100+baseWidth/2},${100+height/2}" 
+                         fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="${100+height/2+20}" text-anchor="middle" fill="#888" font-size="14">b=${b}</text>
+                <line x1="100" y1="${100-height/2}" x2="100" y2="${100+height/2}" stroke="#888" stroke-dasharray="4"/>
+                <text x="115" y="100" fill="#888" font-size="14">h=${h}</text>
+            `;
+        }
+        
+        function drawTriangleGeneric() {
+            return `
+                <polygon points="100,30 40,170 160,170" fill="none" stroke="#ef4444" stroke-width="3"/>
+            `;
+        }
+        
+        function drawCircle(r) {
+            const radius = Math.min(80, r * 8);
+            return `
+                <circle cx="100" cy="100" r="${radius}" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <line x1="100" y1="100" x2="${100+radius}" y2="100" stroke="#888" stroke-width="2"/>
+                <text x="${100+radius/2}" y="90" text-anchor="middle" fill="#888" font-size="14">r=${r}</text>
+            `;
+        }
+        
+        function drawTrapezoid(a, b, h) {
+            const topW = Math.min(80, a * 6);
+            const botW = Math.min(140, b * 8);
+            const height = Math.min(100, h * 8);
+            return `
+                <polygon points="${100-topW/2},${100-height/2} ${100+topW/2},${100-height/2} 
+                                 ${100+botW/2},${100+height/2} ${100-botW/2},${100+height/2}" 
+                         fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="${100-height/2-10}" text-anchor="middle" fill="#888" font-size="12">${a}</text>
+                <text x="100" y="${100+height/2+20}" text-anchor="middle" fill="#888" font-size="12">${b}</text>
+            `;
+        }
+        
+        function drawCube() {
+            return `
+                <polygon points="60,60 140,60 140,140 60,140" fill="none" stroke="#ef4444" stroke-width="2"/>
+                <polygon points="80,40 160,40 160,120 80,120" fill="none" stroke="#ef4444" stroke-width="2"/>
+                <line x1="60" y1="60" x2="80" y2="40" stroke="#ef4444" stroke-width="2"/>
+                <line x1="140" y1="60" x2="160" y2="40" stroke="#ef4444" stroke-width="2"/>
+                <line x1="140" y1="140" x2="160" y2="120" stroke="#ef4444" stroke-width="2"/>
+            `;
+        }
+        
+        function drawBox() {
+            return `
+                <polygon points="40,70 130,70 130,160 40,160" fill="none" stroke="#ef4444" stroke-width="2"/>
+                <polygon points="70,40 160,40 160,130 70,130" fill="none" stroke="#ef4444" stroke-width="2"/>
+                <line x1="40" y1="70" x2="70" y2="40" stroke="#ef4444" stroke-width="2"/>
+                <line x1="130" y1="70" x2="160" y2="40" stroke="#ef4444" stroke-width="2"/>
+                <line x1="130" y1="160" x2="160" y2="130" stroke="#ef4444" stroke-width="2"/>
+            `;
+        }
+        
+        function drawCylinder() {
+            return `
+                <ellipse cx="100" cy="50" rx="50" ry="20" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <line x1="50" y1="50" x2="50" y2="150" stroke="#ef4444" stroke-width="3"/>
+                <line x1="150" y1="50" x2="150" y2="150" stroke="#ef4444" stroke-width="3"/>
+                <ellipse cx="100" cy="150" rx="50" ry="20" fill="none" stroke="#ef4444" stroke-width="3"/>
+            `;
+        }
+        
+        function drawSphere() {
+            return `
+                <circle cx="100" cy="100" r="70" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <ellipse cx="100" cy="100" rx="70" ry="25" fill="none" stroke="#ef4444" stroke-width="1" stroke-dasharray="5"/>
+            `;
+        }
+        
+        function drawTriangleAngles(a, b) {
+            const c = 180 - a - b;
+            return `
+                <polygon points="100,30 40,170 160,170" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="55" text-anchor="middle" fill="#888" font-size="14">${a}°</text>
+                <text x="55" y="160" fill="#888" font-size="14">${b}°</text>
+                <text x="145" y="160" fill="#888" font-size="14">?</text>
+            `;
+        }
+        
+        function drawAngle(a) {
+            const rad = a * Math.PI / 180;
+            const len = 80;
+            return `
+                <line x1="50" y1="150" x2="170" y2="150" stroke="#ef4444" stroke-width="3"/>
+                <line x1="50" y1="150" x2="${50 + len * Math.cos(-rad)}" y2="${150 + len * Math.sin(-rad)}" stroke="#ef4444" stroke-width="3"/>
+                <path d="M 80 150 A 30 30 0 0 0 ${50 + 30 * Math.cos(-rad)} ${150 + 30 * Math.sin(-rad)}" fill="none" stroke="#888" stroke-width="2"/>
+                <text x="90" y="135" fill="#888" font-size="14">${a}°</text>
+            `;
+        }
+        
+        function drawQuad() {
+            return `
+                <polygon points="50,50 150,40 160,150 40,140" fill="none" stroke="#ef4444" stroke-width="3"/>
+                <text x="100" y="105" text-anchor="middle" fill="#888" font-size="14">?</text>
+            `;
+        }
+        
+        function generateProblem() {
+            totalCount++;
+            
+            let problemSet;
+            if (topic === 'mixed') {
+                const topics = ['area', 'perimeter', 'volume', 'angles'];
+                problemSet = PROBLEMS[topics[Math.floor(Math.random() * topics.length)]];
+            } else {
+                problemSet = PROBLEMS[topic];
+            }
+            
+            const generator = problemSet[Math.floor(Math.random() * problemSet.length)];
+            currentProblem = generator();
+            
+            document.getElementById('shapeSvg').innerHTML = currentProblem.shape;
+            document.getElementById('problemText').textContent = currentProblem.text;
+            document.getElementById('givenInfo').textContent = currentProblem.given;
+            document.getElementById('formulaHint').textContent = 'Formula: ' + currentProblem.formula;
+            document.getElementById('unitLabel').textContent = currentProblem.unit;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function checkAnswer() {
+            const input = document.getElementById('answerInput');
+            const userAnswer = parseFloat(input.value);
+            
+            if (isNaN(userAnswer)) {
+                document.getElementById('feedback').textContent = 'Please enter a number!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            const tolerance = currentProblem.tolerance || 0.01;
+            const isCorrect = Math.abs(userAnswer - currentProblem.answer) <= tolerance;
+            
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateProblem, 1000);
+            } else {
+                streak = 0;
+                document.getElementById('feedback').textContent = `✗ Answer: ${currentProblem.answer} ${currentProblem.unit}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function skipProblem() {
+            document.getElementById('feedback').textContent = `Answer: ${currentProblem.answer} ${currentProblem.unit}`;
+            streak = 0;
+            updateUI();
+            setTimeout(generateProblem, 1500);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('skipBtn').addEventListener('click', skipProblem);
+        document.getElementById('formulaBtn').addEventListener('click', () => {
+            document.getElementById('formulaCard').classList.toggle('visible');
+        });
+        
+        // Topic selector
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0;
+                correctCount = 0;
+                totalCount = 0;
+                streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

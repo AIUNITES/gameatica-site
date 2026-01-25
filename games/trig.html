@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Trig Master - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .unit-circle {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        .circle-svg {
+            width: 100%;
+            height: 100%;
+        }
+        .angle-label {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        .question-text {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-family: 'Times New Roman', serif;
+        }
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .answer-btn {
+            padding: 15px;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Times New Roman', serif;
+        }
+        .answer-btn:hover {
+            border-color: var(--primary);
+            background: rgba(239, 68, 68, 0.1);
+        }
+        .answer-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .answer-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .answer-btn:disabled { cursor: not-allowed; }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            padding: 8px 16px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .mode-btn:hover { border-color: var(--primary); color: var(--white); }
+        .mode-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .reference-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+        }
+        .reference-card.visible { display: block; }
+        .reference-card h4 {
+            margin-bottom: 10px;
+            color: var(--gray-light);
+        }
+        .reference-table {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+        .reference-table div {
+            padding: 5px;
+            text-align: center;
+        }
+        .reference-table .header {
+            color: var(--white);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📐 Trig Master</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0/0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="unitcircle">Unit Circle</button>
+            <button class="mode-btn" data-mode="identities">Identities</button>
+            <button class="mode-btn" data-mode="equations">Equations</button>
+            <button class="mode-btn" data-mode="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="unit-circle" id="unitCircle">
+                    <svg class="circle-svg" viewBox="-120 -120 240 240">
+                        <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        <line x1="-110" y1="0" x2="110" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                        <line x1="0" y1="-110" x2="0" y2="110" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+                        <line id="angleLine" x1="0" y1="0" x2="100" y2="0" stroke="#ef4444" stroke-width="3"/>
+                        <circle id="anglePoint" cx="100" cy="0" r="6" fill="#ef4444"/>
+                        <text x="105" y="-5" fill="#888" font-size="12">(1,0)</text>
+                        <text x="-15" y="-105" fill="#888" font-size="12">(0,1)</text>
+                        <text x="-120" y="-5" fill="#888" font-size="12">(-1,0)</text>
+                        <text x="-20" y="115" fill="#888" font-size="12">(0,-1)</text>
+                    </svg>
+                </div>
+                <div class="angle-label" id="angleLabel">θ = 0°</div>
+                <div class="question-text" id="question">What is sin(0°)?</div>
+                <div class="answer-grid" id="answers"></div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="refBtn">📖 Reference</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none">Next →</button>
+        </div>
+
+        <div class="reference-card" id="referenceCard">
+            <h4>Common Values Reference</h4>
+            <div class="reference-table">
+                <div class="header">θ</div>
+                <div class="header">sin</div>
+                <div class="header">cos</div>
+                <div class="header">tan</div>
+                
+                <div>0°</div><div>0</div><div>1</div><div>0</div>
+                <div>30°</div><div>1/2</div><div>√3/2</div><div>√3/3</div>
+                <div>45°</div><div>√2/2</div><div>√2/2</div><div>1</div>
+                <div>60°</div><div>√3/2</div><div>1/2</div><div>√3</div>
+                <div>90°</div><div>1</div><div>0</div><div>undef</div>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Unit Circle:</strong> sin, cos, tan values at key angles</li>
+                <li><strong>Identities:</strong> Pythagorean, reciprocal, quotient identities</li>
+                <li><strong>Equations:</strong> Solve basic trig equations</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'trig';
+        
+        let score = 0;
+        let correctCount = 0;
+        let totalCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let mode = 'unitcircle';
+        let currentProblem = null;
+        let answered = false;
+        
+        // Unit circle angles and their values
+        const UNIT_CIRCLE = {
+            0: { sin: '0', cos: '1', tan: '0' },
+            30: { sin: '1/2', cos: '√3/2', tan: '√3/3' },
+            45: { sin: '√2/2', cos: '√2/2', tan: '1' },
+            60: { sin: '√3/2', cos: '1/2', tan: '√3' },
+            90: { sin: '1', cos: '0', tan: 'undefined' },
+            120: { sin: '√3/2', cos: '-1/2', tan: '-√3' },
+            135: { sin: '√2/2', cos: '-√2/2', tan: '-1' },
+            150: { sin: '1/2', cos: '-√3/2', tan: '-√3/3' },
+            180: { sin: '0', cos: '-1', tan: '0' },
+            210: { sin: '-1/2', cos: '-√3/2', tan: '√3/3' },
+            225: { sin: '-√2/2', cos: '-√2/2', tan: '1' },
+            240: { sin: '-√3/2', cos: '-1/2', tan: '√3' },
+            270: { sin: '-1', cos: '0', tan: 'undefined' },
+            300: { sin: '-√3/2', cos: '1/2', tan: '-√3' },
+            315: { sin: '-√2/2', cos: '√2/2', tan: '-1' },
+            330: { sin: '-1/2', cos: '√3/2', tan: '-√3/3' },
+            360: { sin: '0', cos: '1', tan: '0' }
+        };
+        
+        const IDENTITIES = [
+            { q: 'sin²θ + cos²θ = ?', a: '1', wrong: ['0', 'tan²θ', '2'] },
+            { q: '1 + tan²θ = ?', a: 'sec²θ', wrong: ['csc²θ', 'cot²θ', '1'] },
+            { q: '1 + cot²θ = ?', a: 'csc²θ', wrong: ['sec²θ', 'tan²θ', 'sin²θ'] },
+            { q: 'sin(2θ) = ?', a: '2sinθcosθ', wrong: ['sin²θ', '2sinθ', 'cos²θ - sin²θ'] },
+            { q: 'cos(2θ) = ?', a: 'cos²θ - sin²θ', wrong: ['2cosθsinθ', '2cos²θ', '1 - 2cos²θ'] },
+            { q: 'tan(θ) = ?', a: 'sin(θ)/cos(θ)', wrong: ['cos(θ)/sin(θ)', 'sin(θ)cos(θ)', '1/sin(θ)'] },
+            { q: 'cot(θ) = ?', a: 'cos(θ)/sin(θ)', wrong: ['sin(θ)/cos(θ)', '1/cos(θ)', 'tan(θ)'] },
+            { q: 'sec(θ) = ?', a: '1/cos(θ)', wrong: ['1/sin(θ)', 'cos(θ)', '1/tan(θ)'] },
+            { q: 'csc(θ) = ?', a: '1/sin(θ)', wrong: ['1/cos(θ)', 'sin(θ)', '1/cot(θ)'] },
+            { q: 'sin(-θ) = ?', a: '-sin(θ)', wrong: ['sin(θ)', 'cos(θ)', '-cos(θ)'] },
+            { q: 'cos(-θ) = ?', a: 'cos(θ)', wrong: ['-cos(θ)', 'sin(θ)', '-sin(θ)'] },
+        ];
+        
+        const EQUATIONS = [
+            { q: 'If sin(θ) = 1, then θ = ?', a: '90°', wrong: ['0°', '180°', '270°'] },
+            { q: 'If cos(θ) = 0, then θ = ?', a: '90° or 270°', wrong: ['0° or 180°', '45° or 135°', '60° or 120°'] },
+            { q: 'If tan(θ) = 1, then θ = ?', a: '45° or 225°', wrong: ['0° or 180°', '90° or 270°', '30° or 210°'] },
+            { q: 'If sin(θ) = 1/2, θ in Q1 = ?', a: '30°', wrong: ['60°', '45°', '90°'] },
+            { q: 'If cos(θ) = √2/2, θ in Q1 = ?', a: '45°', wrong: ['30°', '60°', '90°'] },
+            { q: 'If sin(θ) = 0, θ = ?', a: '0° or 180°', wrong: ['90° or 270°', '45° or 225°', '60° or 240°'] },
+            { q: 'If tan(θ) = 0, θ = ?', a: '0° or 180°', wrong: ['90° or 270°', '45° or 135°', '30° or 150°'] },
+            { q: 'If cos(θ) = -1, θ = ?', a: '180°', wrong: ['0°', '90°', '270°'] },
+        ];
+        
+        function shuffle(arr) {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+        
+        function setAngle(degrees) {
+            const radians = degrees * Math.PI / 180;
+            const x = 100 * Math.cos(radians);
+            const y = -100 * Math.sin(radians); // SVG y is inverted
+            
+            document.getElementById('angleLine').setAttribute('x2', x);
+            document.getElementById('angleLine').setAttribute('y2', y);
+            document.getElementById('anglePoint').setAttribute('cx', x);
+            document.getElementById('anglePoint').setAttribute('cy', y);
+        }
+        
+        function generateProblem() {
+            answered = false;
+            totalCount++;
+            
+            if (mode === 'unitcircle' || (mode === 'mixed' && Math.random() < 0.5)) {
+                generateUnitCircleProblem();
+            } else if (mode === 'identities' || (mode === 'mixed' && Math.random() < 0.7)) {
+                generateIdentityProblem();
+            } else {
+                generateEquationProblem();
+            }
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('nextBtn').style.display = 'none';
+        }
+        
+        function generateUnitCircleProblem() {
+            const angles = [0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330];
+            const angle = angles[Math.floor(Math.random() * angles.length)];
+            const funcs = ['sin', 'cos', 'tan'];
+            const func = funcs[Math.floor(Math.random() * funcs.length)];
+            
+            document.getElementById('unitCircle').style.display = 'block';
+            setAngle(angle);
+            document.getElementById('angleLabel').textContent = `θ = ${angle}°`;
+            document.getElementById('question').textContent = `What is ${func}(${angle}°)?`;
+            
+            const correctAnswer = UNIT_CIRCLE[angle][func];
+            
+            // Generate wrong answers
+            let wrongAnswers = [];
+            const allValues = new Set(['0', '1', '-1', '1/2', '-1/2', '√2/2', '-√2/2', '√3/2', '-√3/2', '√3', '-√3', '√3/3', '-√3/3', 'undefined']);
+            allValues.delete(correctAnswer);
+            wrongAnswers = shuffle([...allValues]).slice(0, 3);
+            
+            currentProblem = { answer: correctAnswer };
+            renderAnswers([correctAnswer, ...wrongAnswers]);
+        }
+        
+        function generateIdentityProblem() {
+            const problem = IDENTITIES[Math.floor(Math.random() * IDENTITIES.length)];
+            
+            document.getElementById('unitCircle').style.display = 'none';
+            document.getElementById('angleLabel').textContent = 'Identity';
+            document.getElementById('question').textContent = problem.q;
+            
+            currentProblem = { answer: problem.a };
+            renderAnswers([problem.a, ...problem.wrong]);
+        }
+        
+        function generateEquationProblem() {
+            const problem = EQUATIONS[Math.floor(Math.random() * EQUATIONS.length)];
+            
+            document.getElementById('unitCircle').style.display = 'none';
+            document.getElementById('angleLabel').textContent = 'Solve';
+            document.getElementById('question').textContent = problem.q;
+            
+            currentProblem = { answer: problem.a };
+            renderAnswers([problem.a, ...problem.wrong]);
+        }
+        
+        function renderAnswers(answers) {
+            const shuffled = shuffle(answers);
+            const container = document.getElementById('answers');
+            container.innerHTML = '';
+            
+            shuffled.forEach(ans => {
+                const btn = document.createElement('button');
+                btn.className = 'answer-btn';
+                btn.textContent = ans;
+                btn.onclick = () => checkAnswer(ans, btn);
+                container.appendChild(btn);
+            });
+        }
+        
+        function checkAnswer(answer, btn) {
+            if (answered) return;
+            answered = true;
+            
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(b => b.disabled = true);
+            
+            if (answer === currentProblem.answer) {
+                btn.classList.add('correct');
+                score += 100 + (streak * 25);
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${100 + (streak - 1) * 25} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                buttons.forEach(b => {
+                    if (b.textContent === currentProblem.answer) b.classList.add('correct');
+                });
+                
+                streak = 0;
+                document.getElementById('feedback').textContent = `✗ Answer: ${currentProblem.answer}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = `${correctCount}/${totalCount}`;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        function toggleReference() {
+            document.getElementById('referenceCard').classList.toggle('visible');
+        }
+        
+        // Mode selector
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                // Reset
+                score = 0;
+                correctCount = 0;
+                totalCount = 0;
+                streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('refBtn').addEventListener('click', toggleReference);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

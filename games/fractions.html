@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Fraction Frenzy - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥧</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .fraction-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        .fraction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .fraction .num, .fraction .denom {
+            padding: 5px 15px;
+        }
+        .fraction .line {
+            width: 100%;
+            height: 3px;
+            background: var(--white);
+        }
+        .operator {
+            font-size: 2.5rem;
+            color: var(--primary);
+        }
+        .equals {
+            font-size: 2.5rem;
+            color: var(--gray);
+        }
+        .answer-fraction {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .answer-input {
+            width: 80px;
+            padding: 10px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: var(--white);
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .answer-line {
+            width: 80px;
+            height: 3px;
+            background: var(--primary);
+            margin: 5px 0;
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .mode-btn:hover { border-color: var(--primary); color: var(--white); }
+        .mode-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .visual-hint {
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .pie-visual {
+            width: 80px;
+            height: 80px;
+            display: inline-block;
+            margin: 5px;
+        }
+        .hint-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+        .simplify-note {
+            color: var(--warning);
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        @media (max-width: 500px) {
+            .fraction { font-size: 1.5rem; }
+            .operator, .equals { font-size: 1.8rem; }
+            .answer-input { width: 60px; font-size: 1.2rem; }
+            .answer-line { width: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🥧 Fraction Frenzy</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" data-mode="add">➕ Add</button>
+            <button class="mode-btn" data-mode="sub">➖ Subtract</button>
+            <button class="mode-btn" data-mode="mul">✖️ Multiply</button>
+            <button class="mode-btn" data-mode="div">➗ Divide</button>
+            <button class="mode-btn" data-mode="simplify">🔢 Simplify</button>
+            <button class="mode-btn" data-mode="mixed">🎲 Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="fraction-display" id="fractionDisplay">
+                    <!-- Problem rendered here -->
+                </div>
+                
+                <p class="simplify-note" id="simplifyNote">Simplify your answer to lowest terms!</p>
+                
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-text" id="hintText"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="skipBtn">⏭️ Skip</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Enter the numerator (top) and denominator (bottom)</li>
+                <li>Always simplify to lowest terms!</li>
+                <li>Build streaks for bonus points</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'fractions';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let mode = 'add';
+        let currentProblem = null;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function gcd(a, b) {
+            a = Math.abs(a);
+            b = Math.abs(b);
+            while (b) {
+                [a, b] = [b, a % b];
+            }
+            return a;
+        }
+        
+        function simplify(num, denom) {
+            if (denom === 0) return { num: 0, denom: 1 };
+            const g = gcd(num, denom);
+            let n = num / g;
+            let d = denom / g;
+            // Keep denominator positive
+            if (d < 0) {
+                n = -n;
+                d = -d;
+            }
+            return { num: n, denom: d };
+        }
+        
+        function generateProblem() {
+            let actualMode = mode;
+            if (mode === 'mixed') {
+                const modes = ['add', 'sub', 'mul', 'div', 'simplify'];
+                actualMode = modes[Math.floor(Math.random() * modes.length)];
+            }
+            
+            let n1, d1, n2, d2, ansNum, ansDenom, operator;
+            
+            switch (actualMode) {
+                case 'add':
+                    d1 = randInt(2, 10);
+                    d2 = randInt(2, 10);
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, d2 - 1);
+                    ansNum = n1 * d2 + n2 * d1;
+                    ansDenom = d1 * d2;
+                    operator = '+';
+                    break;
+                    
+                case 'sub':
+                    d1 = randInt(2, 10);
+                    d2 = randInt(2, 10);
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, Math.min(d2 - 1, Math.floor((n1 * d2) / d1))); // Ensure positive result
+                    ansNum = n1 * d2 - n2 * d1;
+                    ansDenom = d1 * d2;
+                    operator = '−';
+                    break;
+                    
+                case 'mul':
+                    d1 = randInt(2, 8);
+                    d2 = randInt(2, 8);
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, d2 - 1);
+                    ansNum = n1 * n2;
+                    ansDenom = d1 * d2;
+                    operator = '×';
+                    break;
+                    
+                case 'div':
+                    d1 = randInt(2, 8);
+                    d2 = randInt(2, 8);
+                    n1 = randInt(1, d1 - 1);
+                    n2 = randInt(1, d2 - 1);
+                    ansNum = n1 * d2;
+                    ansDenom = d1 * n2;
+                    operator = '÷';
+                    break;
+                    
+                case 'simplify':
+                    // Create a fraction that can be simplified
+                    const factor = randInt(2, 6);
+                    const baseNum = randInt(1, 8);
+                    const baseDenom = randInt(baseNum + 1, 12);
+                    n1 = baseNum * factor;
+                    d1 = baseDenom * factor;
+                    n2 = null;
+                    d2 = null;
+                    ansNum = baseNum;
+                    ansDenom = baseDenom;
+                    operator = null;
+                    break;
+            }
+            
+            // Simplify the answer
+            const simplified = simplify(ansNum, ansDenom);
+            
+            currentProblem = {
+                n1, d1, n2, d2,
+                operator,
+                ansNum: simplified.num,
+                ansDenom: simplified.denom,
+                mode: actualMode
+            };
+            
+            renderProblem();
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('hintText').textContent = '';
+        }
+        
+        function renderProblem() {
+            const display = document.getElementById('fractionDisplay');
+            const p = currentProblem;
+            
+            if (p.mode === 'simplify') {
+                display.innerHTML = `
+                    <div class="fraction">
+                        <span class="num">${p.n1}</span>
+                        <div class="line"></div>
+                        <span class="denom">${p.d1}</span>
+                    </div>
+                    <span class="equals">=</span>
+                    <div class="answer-fraction">
+                        <input type="number" class="answer-input" id="ansNum" placeholder="?" autofocus>
+                        <div class="answer-line"></div>
+                        <input type="number" class="answer-input" id="ansDenom" placeholder="?">
+                    </div>
+                `;
+                document.getElementById('simplifyNote').textContent = 'Simplify to lowest terms!';
+            } else {
+                display.innerHTML = `
+                    <div class="fraction">
+                        <span class="num">${p.n1}</span>
+                        <div class="line"></div>
+                        <span class="denom">${p.d1}</span>
+                    </div>
+                    <span class="operator">${p.operator}</span>
+                    <div class="fraction">
+                        <span class="num">${p.n2}</span>
+                        <div class="line"></div>
+                        <span class="denom">${p.d2}</span>
+                    </div>
+                    <span class="equals">=</span>
+                    <div class="answer-fraction">
+                        <input type="number" class="answer-input" id="ansNum" placeholder="?" autofocus>
+                        <div class="answer-line"></div>
+                        <input type="number" class="answer-input" id="ansDenom" placeholder="?">
+                    </div>
+                `;
+                document.getElementById('simplifyNote').textContent = 'Simplify your answer to lowest terms!';
+            }
+            
+            // Add enter key listeners
+            document.getElementById('ansNum').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('ansDenom').focus();
+                }
+            });
+            document.getElementById('ansDenom').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+        }
+        
+        function checkAnswer() {
+            const userNum = parseInt(document.getElementById('ansNum').value);
+            const userDenom = parseInt(document.getElementById('ansDenom').value);
+            
+            if (isNaN(userNum) || isNaN(userDenom)) {
+                document.getElementById('feedback').textContent = 'Enter both numerator and denominator!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            if (userDenom === 0) {
+                document.getElementById('feedback').textContent = 'Denominator cannot be zero!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            // Check if answer is correct (compare simplified forms)
+            const userSimp = simplify(userNum, userDenom);
+            const isCorrect = userSimp.num === currentProblem.ansNum && 
+                             userSimp.denom === currentProblem.ansDenom;
+            
+            // Also accept equivalent non-simplified
+            const isEquivalent = (userNum * currentProblem.ansDenom) === (userDenom * currentProblem.ansNum);
+            
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateProblem, 1200);
+            } else if (isEquivalent) {
+                // Right answer but not simplified
+                document.getElementById('feedback').textContent = `Almost! Simplify: ${currentProblem.ansNum}/${currentProblem.ansDenom}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+            } else {
+                streak = 0;
+                document.getElementById('feedback').textContent = `✗ Answer: ${currentProblem.ansNum}/${currentProblem.ansDenom}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            const p = currentProblem;
+            let hint = '';
+            
+            switch (p.mode) {
+                case 'add':
+                case 'sub':
+                    const lcd = (p.d1 * p.d2) / gcd(p.d1, p.d2);
+                    hint = `Find common denominator: ${lcd}`;
+                    break;
+                case 'mul':
+                    hint = `Multiply straight across: (${p.n1}×${p.n2})/(${p.d1}×${p.d2})`;
+                    break;
+                case 'div':
+                    hint = `Flip and multiply: ${p.n1}/${p.d1} × ${p.d2}/${p.n2}`;
+                    break;
+                case 'simplify':
+                    const g = gcd(p.n1, p.d1);
+                    hint = `Find GCD: ${g}. Divide both by ${g}`;
+                    break;
+            }
+            
+            document.getElementById('hintText').textContent = '💡 ' + hint;
+        }
+        
+        function skipProblem() {
+            document.getElementById('feedback').textContent = `Answer: ${currentProblem.ansNum}/${currentProblem.ansDenom}`;
+            streak = 0;
+            updateUI();
+            setTimeout(generateProblem, 1500);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('skipBtn').addEventListener('click', skipProblem);
+        
+        // Mode selector
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                score = 0;
+                correctCount = 0;
+                streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>
