@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Typing Test - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
+    <style>
+        .typing-display {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4rem;
+            line-height: 2;
+            min-height: 200px;
+        }
+        .char {
+            display: inline;
+            transition: color 0.1s;
+        }
+        .char.correct { color: var(--success); }
+        .char.incorrect { color: var(--primary); text-decoration: underline; }
+        .char.current { 
+            background: rgba(239, 68, 68, 0.3);
+            border-bottom: 2px solid var(--primary);
+        }
+        .char.pending { color: var(--gray); }
+        
+        .typing-input {
+            width: 100%;
+            padding: 15px 20px;
+            background: var(--dark-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+            outline: none;
+            margin-bottom: 20px;
+        }
+        .typing-input:focus {
+            border-color: var(--primary);
+        }
+        .typing-input:disabled {
+            opacity: 0.5;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: var(--dark-card);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-card .label {
+            font-size: 0.75rem;
+            color: var(--gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .duration-select {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .dur-btn {
+            padding: 10px 20px;
+            background: var(--dark-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--white);
+            cursor: pointer;
+        }
+        .dur-btn:hover { border-color: var(--primary); }
+        .dur-btn.active { background: var(--gradient); }
+        
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .typing-display { font-size: 1.1rem; padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>⌨️ Typing Test</h1>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="value" id="wpm">0</div>
+                <div class="label">WPM</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="accuracy">100%</div>
+                <div class="label">Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="time">0:00</div>
+                <div class="label">Time</div>
+            </div>
+            <div class="stat-card">
+                <div class="value" id="chars">0</div>
+                <div class="label">Characters</div>
+            </div>
+        </div>
+
+        <div class="duration-select">
+            <button class="dur-btn" data-dur="30">30s</button>
+            <button class="dur-btn active" data-dur="60">60s</button>
+            <button class="dur-btn" data-dur="120">2min</button>
+        </div>
+
+        <div class="game-board">
+            <div class="typing-display" id="textDisplay"></div>
+            <input type="text" class="typing-input" id="typingInput" placeholder="Start typing to begin..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="resetBtn">🔄 New Test</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 Best WPM</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Type the text as fast and accurately as you can</li>
+                <li>Test starts when you begin typing</li>
+                <li>WPM = Words Per Minute</li>
+                <li>Try to beat your high score!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'typing';
+        
+        const TEXTS = [
+            "The quick brown fox jumps over the lazy dog. This sentence contains every letter of the alphabet at least once, making it perfect for typing practice.",
+            "Programming is the art of telling a computer what to do. Good code is its own best documentation. Simple is better than complex.",
+            "In the beginning, there was nothing. Then something happened, and suddenly the universe existed. Stars formed, planets coalesced, and life emerged.",
+            "The best way to predict the future is to create it. Every expert was once a beginner. Success is not final, failure is not fatal.",
+            "Technology is best when it brings people together. Innovation distinguishes between a leader and a follower. Stay hungry, stay foolish.",
+            "The only way to do great work is to love what you do. Your time is limited, so don't waste it living someone else's life.",
+            "Creativity is intelligence having fun. Logic will get you from A to B. Imagination will take you everywhere. Keep moving forward.",
+            "Games have the power to bring joy, challenge our minds, and connect us with others. Every game is a journey of discovery and growth.",
+        ];
+        
+        let currentText = '';
+        let typedChars = [];
+        let startTime = null;
+        let timerInterval = null;
+        let duration = 60;
+        let timeLeft = 60;
+        let isActive = false;
+        let isComplete = false;
+        let totalTyped = 0;
+        let correctTyped = 0;
+        
+        function init() {
+            clearInterval(timerInterval);
+            currentText = TEXTS[Math.floor(Math.random() * TEXTS.length)];
+            typedChars = [];
+            startTime = null;
+            timeLeft = duration;
+            isActive = false;
+            isComplete = false;
+            totalTyped = 0;
+            correctTyped = 0;
+            
+            renderText();
+            updateStats();
+            
+            const input = document.getElementById('typingInput');
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+            
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function renderText() {
+            const display = document.getElementById('textDisplay');
+            
+            let html = '';
+            for (let i = 0; i < currentText.length; i++) {
+                let className = 'char ';
+                if (i < typedChars.length) {
+                    className += typedChars[i] === currentText[i] ? 'correct' : 'incorrect';
+                } else if (i === typedChars.length) {
+                    className += 'current pending';
+                } else {
+                    className += 'pending';
+                }
+                
+                let char = currentText[i];
+                if (char === ' ') char = '&nbsp;';
+                
+                html += `<span class="${className}">${char}</span>`;
+            }
+            
+            display.innerHTML = html;
+        }
+        
+        function handleInput(e) {
+            if (isComplete) return;
+            
+            const input = e.target;
+            const typed = input.value;
+            
+            // Start timer on first keystroke
+            if (!isActive && typed.length > 0) {
+                isActive = true;
+                startTime = Date.now();
+                startTimer();
+            }
+            
+            // Track what was typed
+            typedChars = typed.split('');
+            totalTyped = typed.length;
+            correctTyped = typedChars.filter((char, i) => char === currentText[i]).length;
+            
+            renderText();
+            updateStats();
+            
+            // Check if text is complete
+            if (typed.length >= currentText.length) {
+                endTest();
+            }
+        }
+        
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                timeLeft = Math.max(0, duration - elapsed);
+                
+                document.getElementById('time').textContent = GameUtils.formatTime(timeLeft);
+                
+                if (timeLeft <= 0) {
+                    endTest();
+                }
+                
+                updateStats();
+            }, 100);
+        }
+        
+        function updateStats() {
+            const elapsed = startTime ? (Date.now() - startTime) / 1000 : 0;
+            const minutes = elapsed / 60 || 1;
+            
+            // WPM: (characters typed / 5) / minutes
+            const wpm = Math.round((correctTyped / 5) / minutes) || 0;
+            const accuracy = totalTyped > 0 ? Math.round((correctTyped / totalTyped) * 100) : 100;
+            
+            document.getElementById('wpm').textContent = wpm;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('chars').textContent = correctTyped;
+            
+            if (!startTime) {
+                document.getElementById('time').textContent = GameUtils.formatTime(duration);
+            }
+        }
+        
+        function endTest() {
+            isComplete = true;
+            isActive = false;
+            clearInterval(timerInterval);
+            
+            const input = document.getElementById('typingInput');
+            input.disabled = true;
+            
+            const elapsed = (Date.now() - startTime) / 1000;
+            const minutes = elapsed / 60;
+            const wpm = Math.round((correctTyped / 5) / minutes);
+            const accuracy = totalTyped > 0 ? Math.round((correctTyped / totalTyped) * 100) : 100;
+            
+            // Score based on WPM and accuracy
+            const score = Math.round(wpm * (accuracy / 100) * 10);
+            
+            GameUtils.playSound('levelup');
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { wpm, accuracy, chars: correctTyped, duration }
+            });
+        }
+        
+        // Duration buttons
+        document.querySelectorAll('.dur-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                duration = parseInt(btn.dataset.dur);
+                init();
+            });
+        });
+        
+        document.getElementById('typingInput').addEventListener('input', handleInput);
+        document.getElementById('resetBtn').addEventListener('click', init);
+        
+        // Focus input on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+        });
+        
+        // Click anywhere to focus input
+        document.querySelector('.typing-display').addEventListener('click', () => {
+            document.getElementById('typingInput').focus();
+        });
+        
+        init();
+    </script>
+</body>
+</html>

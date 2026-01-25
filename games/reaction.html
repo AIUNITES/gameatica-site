@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Reaction Test - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <style>
+        .reaction-box {
+            min-height: 350px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 40px;
+            text-align: center;
+            user-select: none;
+        }
+        .reaction-box.waiting {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .reaction-box.ready {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+        .reaction-box.clicked {
+            background: var(--dark-card);
+        }
+        .reaction-box.early {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+        }
+        
+        .reaction-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        .reaction-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .reaction-subtext {
+            color: rgba(255,255,255,0.8);
+            font-size: 1rem;
+        }
+        .reaction-time {
+            font-size: 4rem;
+            font-weight: 800;
+            margin: 20px 0;
+        }
+        
+        .attempts-display {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .attempt-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--dark-card);
+        }
+        .attempt-dot.done {
+            background: var(--success);
+        }
+        .attempt-dot.current {
+            background: var(--primary);
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+        }
+        
+        .results-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .result-chip {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .result-chip.best {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--success);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>⚡ Reaction Test</h1>
+        </div>
+
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="bestTime">--</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Average</div>
+                <div class="value" id="avgTime">--</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Attempt</div>
+                <div class="value" id="attempt">0/5</div>
+            </div>
+        </div>
+
+        <div class="attempts-display" id="attemptsDisplay"></div>
+
+        <div class="game-board">
+            <div class="reaction-box clicked" id="reactionBox">
+                <div class="reaction-icon">⚡</div>
+                <div class="reaction-text">Click to Start</div>
+                <div class="reaction-subtext">Test your reaction time</div>
+            </div>
+        </div>
+
+        <div id="resultsArea" style="display:none;">
+            <div class="results-list" id="resultsList"></div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="resetBtn">🔄 Reset</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 Best Times</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Wait for the box to turn GREEN</li>
+                <li>Click as fast as you can when it changes</li>
+                <li>Don't click too early!</li>
+                <li>5 attempts to get your best time</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'reaction';
+        const TOTAL_ATTEMPTS = 5;
+        
+        let state = 'idle'; // idle, waiting, ready, result, early, complete
+        let startTime = null;
+        let timeoutId = null;
+        let attempt = 0;
+        let results = [];
+        
+        const box = document.getElementById('reactionBox');
+        
+        function updateAttemptsDisplay() {
+            const display = document.getElementById('attemptsDisplay');
+            let html = '';
+            for (let i = 0; i < TOTAL_ATTEMPTS; i++) {
+                let className = 'attempt-dot';
+                if (i < attempt) className += ' done';
+                else if (i === attempt && state !== 'idle' && state !== 'complete') className += ' current';
+                html += `<div class="${className}"></div>`;
+            }
+            display.innerHTML = html;
+        }
+        
+        function setState(newState, time = null) {
+            state = newState;
+            box.className = 'reaction-box ' + (newState === 'result' ? 'clicked' : newState);
+            
+            switch (newState) {
+                case 'idle':
+                    box.innerHTML = `
+                        <div class="reaction-icon">⚡</div>
+                        <div class="reaction-text">Click to Start</div>
+                        <div class="reaction-subtext">Test your reaction time</div>
+                    `;
+                    break;
+                    
+                case 'waiting':
+                    box.innerHTML = `
+                        <div class="reaction-icon">🔴</div>
+                        <div class="reaction-text">Wait for Green...</div>
+                        <div class="reaction-subtext">Don't click yet!</div>
+                    `;
+                    break;
+                    
+                case 'ready':
+                    box.innerHTML = `
+                        <div class="reaction-icon">🟢</div>
+                        <div class="reaction-text">CLICK NOW!</div>
+                        <div class="reaction-subtext">As fast as you can!</div>
+                    `;
+                    break;
+                    
+                case 'result':
+                    box.innerHTML = `
+                        <div class="reaction-icon">✅</div>
+                        <div class="reaction-time">${time}ms</div>
+                        <div class="reaction-subtext">Click to continue</div>
+                    `;
+                    break;
+                    
+                case 'early':
+                    box.innerHTML = `
+                        <div class="reaction-icon">❌</div>
+                        <div class="reaction-text">Too Early!</div>
+                        <div class="reaction-subtext">Click to try again</div>
+                    `;
+                    break;
+                    
+                case 'complete':
+                    const best = Math.min(...results);
+                    const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+                    box.innerHTML = `
+                        <div class="reaction-icon">🏆</div>
+                        <div class="reaction-text">Complete!</div>
+                        <div class="reaction-time">${best}ms</div>
+                        <div class="reaction-subtext">Best time (Avg: ${avg}ms)</div>
+                    `;
+                    break;
+            }
+            
+            updateAttemptsDisplay();
+            updateStats();
+        }
+        
+        function updateStats() {
+            document.getElementById('attempt').textContent = `${attempt}/${TOTAL_ATTEMPTS}`;
+            
+            if (results.length > 0) {
+                const best = Math.min(...results);
+                const avg = Math.round(results.reduce((a, b) => a + b, 0) / results.length);
+                document.getElementById('bestTime').textContent = best + 'ms';
+                document.getElementById('avgTime').textContent = avg + 'ms';
+            }
+            
+            // Show results list
+            if (results.length > 0) {
+                const best = Math.min(...results);
+                document.getElementById('resultsArea').style.display = 'block';
+                document.getElementById('resultsList').innerHTML = results.map((r, i) => 
+                    `<span class="result-chip ${r === best ? 'best' : ''}">#${i + 1}: ${r}ms</span>`
+                ).join('');
+            }
+        }
+        
+        function handleClick() {
+            switch (state) {
+                case 'idle':
+                    startRound();
+                    break;
+                    
+                case 'waiting':
+                    // Clicked too early!
+                    clearTimeout(timeoutId);
+                    setState('early');
+                    GameUtils.vibrate([50, 30, 50]);
+                    break;
+                    
+                case 'ready':
+                    // Record the time
+                    const reactionTime = Date.now() - startTime;
+                    results.push(reactionTime);
+                    attempt++;
+                    GameUtils.playSound('point');
+                    GameUtils.vibrate(30);
+                    
+                    if (attempt >= TOTAL_ATTEMPTS) {
+                        finishGame();
+                    } else {
+                        setState('result', reactionTime);
+                    }
+                    break;
+                    
+                case 'result':
+                case 'early':
+                    startRound();
+                    break;
+                    
+                case 'complete':
+                    resetGame();
+                    break;
+            }
+        }
+        
+        function startRound() {
+            setState('waiting');
+            
+            // Random delay between 1-4 seconds
+            const delay = 1000 + Math.random() * 3000;
+            
+            timeoutId = setTimeout(() => {
+                startTime = Date.now();
+                setState('ready');
+            }, delay);
+        }
+        
+        function finishGame() {
+            const best = Math.min(...results);
+            setState('complete');
+            
+            // Score: inverse of best time (lower time = higher score)
+            const score = Math.max(0, 1000 - best);
+            
+            GameUtils.playSound('levelup');
+            
+            setTimeout(() => {
+                GameUtils.showGameOver(score, GAME_ID, {
+                    extraData: { 
+                        best, 
+                        average: Math.round(results.reduce((a, b) => a + b, 0) / results.length),
+                        attempts: results 
+                    }
+                });
+            }, 500);
+        }
+        
+        function resetGame() {
+            clearTimeout(timeoutId);
+            attempt = 0;
+            results = [];
+            document.getElementById('resultsArea').style.display = 'none';
+            document.getElementById('bestTime').textContent = '--';
+            document.getElementById('avgTime').textContent = '--';
+            setState('idle');
+        }
+        
+        box.addEventListener('click', handleClick);
+        box.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleClick();
+        });
+        
+        document.getElementById('resetBtn').addEventListener('click', resetGame);
+        
+        // Prevent spacebar from triggering
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                handleClick();
+            }
+        });
+        
+        // Initialize
+        updateAttemptsDisplay();
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+    </script>
+</body>
+</html>

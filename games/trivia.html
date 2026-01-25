@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivia - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+    <style>
+        .question-card {
+            background: var(--dark-card);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        .question-text {
+            font-size: 1.4rem;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .question-number {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        .answers-grid {
+            display: grid;
+            gap: 12px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .answer-btn {
+            padding: 16px 20px;
+            background: var(--dark-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .answer-btn:hover:not(:disabled) {
+            border-color: var(--primary);
+            transform: translateX(5px);
+        }
+        .answer-btn.correct {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--success);
+        }
+        .answer-btn.wrong {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--primary);
+        }
+        .answer-btn:disabled {
+            cursor: default;
+        }
+        .timer-bar {
+            height: 6px;
+            background: var(--dark-card);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: var(--gradient);
+            transition: width 0.1s linear;
+        }
+        .timer-fill.warning {
+            background: var(--warning);
+        }
+        .timer-fill.danger {
+            background: var(--primary);
+        }
+        .streak-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .streak-flames {
+            font-size: 2rem;
+        }
+        .category-select {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .cat-btn {
+            padding: 8px 16px;
+            background: var(--dark-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .cat-btn:hover { border-color: var(--primary); }
+        .cat-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🧩 Trivia</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0/0</div>
+            </div>
+        </div>
+
+        <div id="gameArea">
+            <div class="category-select" id="categorySelect">
+                <button class="cat-btn active" data-cat="all">🎲 All</button>
+                <button class="cat-btn" data-cat="science">🔬 Science</button>
+                <button class="cat-btn" data-cat="history">📜 History</button>
+                <button class="cat-btn" data-cat="geography">🌍 Geography</button>
+                <button class="cat-btn" data-cat="entertainment">🎬 Entertainment</button>
+            </div>
+
+            <div class="timer-bar">
+                <div class="timer-fill" id="timerFill" style="width: 100%"></div>
+            </div>
+
+            <div class="question-card" id="questionCard">
+                <span class="category-badge" id="categoryBadge">Category</span>
+                <p class="question-text" id="questionText">Press Start to begin!</p>
+                <p class="question-number" id="questionNumber"></p>
+            </div>
+
+            <div class="answers-grid" id="answersGrid"></div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="startBtn">▶ Start Game</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Answer questions before time runs out</li>
+                <li>Build streaks for bonus points</li>
+                <li>Faster answers = more points</li>
+                <li>10 questions per round</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'trivia';
+        
+        const QUESTIONS = [
+            // Science
+            { category: 'science', q: 'What planet is known as the Red Planet?', answers: ['Mars', 'Venus', 'Jupiter', 'Saturn'], correct: 0 },
+            { category: 'science', q: 'What is the chemical symbol for gold?', answers: ['Go', 'Au', 'Ag', 'Gd'], correct: 1 },
+            { category: 'science', q: 'How many bones are in the adult human body?', answers: ['186', '206', '226', '256'], correct: 1 },
+            { category: 'science', q: 'What is the largest organ in the human body?', answers: ['Heart', 'Liver', 'Skin', 'Brain'], correct: 2 },
+            { category: 'science', q: 'What gas do plants absorb from the atmosphere?', answers: ['Oxygen', 'Nitrogen', 'Carbon Dioxide', 'Hydrogen'], correct: 2 },
+            
+            // History
+            { category: 'history', q: 'In what year did World War II end?', answers: ['1943', '1944', '1945', '1946'], correct: 2 },
+            { category: 'history', q: 'Who was the first President of the United States?', answers: ['John Adams', 'Thomas Jefferson', 'Benjamin Franklin', 'George Washington'], correct: 3 },
+            { category: 'history', q: 'The Great Wall of China was primarily built to protect against whom?', answers: ['Japanese', 'Mongols', 'Russians', 'Koreans'], correct: 1 },
+            { category: 'history', q: 'What ancient wonder was located in Alexandria, Egypt?', answers: ['Colossus', 'Lighthouse', 'Hanging Gardens', 'Mausoleum'], correct: 1 },
+            { category: 'history', q: 'Who painted the Mona Lisa?', answers: ['Michelangelo', 'Raphael', 'Leonardo da Vinci', 'Botticelli'], correct: 2 },
+            
+            // Geography
+            { category: 'geography', q: 'What is the capital of Australia?', answers: ['Sydney', 'Melbourne', 'Canberra', 'Perth'], correct: 2 },
+            { category: 'geography', q: 'Which river is the longest in the world?', answers: ['Amazon', 'Nile', 'Mississippi', 'Yangtze'], correct: 1 },
+            { category: 'geography', q: 'What is the smallest country in the world?', answers: ['Monaco', 'San Marino', 'Vatican City', 'Liechtenstein'], correct: 2 },
+            { category: 'geography', q: 'Mount Everest is located in which mountain range?', answers: ['Alps', 'Andes', 'Rockies', 'Himalayas'], correct: 3 },
+            { category: 'geography', q: 'What is the largest desert in the world?', answers: ['Sahara', 'Antarctic', 'Gobi', 'Arabian'], correct: 1 },
+            
+            // Entertainment
+            { category: 'entertainment', q: 'Who directed the movie Jurassic Park?', answers: ['James Cameron', 'Steven Spielberg', 'George Lucas', 'Ridley Scott'], correct: 1 },
+            { category: 'entertainment', q: 'What band was Freddie Mercury the lead singer of?', answers: ['The Beatles', 'Led Zeppelin', 'Queen', 'Pink Floyd'], correct: 2 },
+            { category: 'entertainment', q: 'What year was the first iPhone released?', answers: ['2005', '2006', '2007', '2008'], correct: 2 },
+            { category: 'entertainment', q: 'What is the highest-grossing film of all time?', answers: ['Titanic', 'Avatar', 'Avengers: Endgame', 'Star Wars'], correct: 1 },
+            { category: 'entertainment', q: 'Who wrote the Harry Potter series?', answers: ['Stephen King', 'J.R.R. Tolkien', 'J.K. Rowling', 'George R.R. Martin'], correct: 2 },
+        ];
+        
+        const TIME_LIMIT = 15;
+        const QUESTIONS_PER_GAME = 10;
+        
+        let currentCategory = 'all';
+        let currentQuestion = null;
+        let questionIndex = 0;
+        let score = 0;
+        let streak = 0;
+        let correctCount = 0;
+        let timeLeft = TIME_LIMIT;
+        let timerInterval = null;
+        let gameQuestions = [];
+        let isPlaying = false;
+        
+        function getFilteredQuestions() {
+            if (currentCategory === 'all') return [...QUESTIONS];
+            return QUESTIONS.filter(q => q.category === currentCategory);
+        }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        
+        function startGame() {
+            const filtered = getFilteredQuestions();
+            gameQuestions = shuffleArray([...filtered]).slice(0, QUESTIONS_PER_GAME);
+            
+            questionIndex = 0;
+            score = 0;
+            streak = 0;
+            correctCount = 0;
+            isPlaying = true;
+            
+            updateUI();
+            showQuestion();
+            
+            document.getElementById('startBtn').textContent = '🔄 Restart';
+            document.getElementById('categorySelect').style.display = 'none';
+            
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function showQuestion() {
+            if (questionIndex >= gameQuestions.length) {
+                endGame();
+                return;
+            }
+            
+            currentQuestion = gameQuestions[questionIndex];
+            timeLeft = TIME_LIMIT;
+            
+            document.getElementById('categoryBadge').textContent = getCategoryEmoji(currentQuestion.category) + ' ' + capitalize(currentQuestion.category);
+            document.getElementById('questionText').textContent = currentQuestion.q;
+            document.getElementById('questionNumber').textContent = `Question ${questionIndex + 1} of ${gameQuestions.length}`;
+            
+            const grid = document.getElementById('answersGrid');
+            grid.innerHTML = currentQuestion.answers.map((answer, i) => 
+                `<button class="answer-btn" data-index="${i}">${answer}</button>`
+            ).join('');
+            
+            grid.querySelectorAll('.answer-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index)));
+            });
+            
+            startTimer();
+        }
+        
+        function startTimer() {
+            clearInterval(timerInterval);
+            const fill = document.getElementById('timerFill');
+            
+            timerInterval = setInterval(() => {
+                timeLeft -= 0.1;
+                const percent = (timeLeft / TIME_LIMIT) * 100;
+                fill.style.width = percent + '%';
+                
+                fill.classList.remove('warning', 'danger');
+                if (percent < 30) fill.classList.add('danger');
+                else if (percent < 50) fill.classList.add('warning');
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    checkAnswer(-1); // Time's up
+                }
+            }, 100);
+        }
+        
+        function checkAnswer(selectedIndex) {
+            clearInterval(timerInterval);
+            
+            const buttons = document.querySelectorAll('.answer-btn');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            const correct = currentQuestion.correct;
+            
+            if (selectedIndex === correct) {
+                // Correct!
+                buttons[selectedIndex].classList.add('correct');
+                const timeBonus = Math.floor(timeLeft * 10);
+                const streakBonus = streak * 10;
+                score += 100 + timeBonus + streakBonus;
+                streak++;
+                correctCount++;
+                GameUtils.playSound('point');
+                GameUtils.vibrate(30);
+            } else {
+                // Wrong
+                if (selectedIndex >= 0) {
+                    buttons[selectedIndex].classList.add('wrong');
+                }
+                buttons[correct].classList.add('correct');
+                streak = 0;
+                GameUtils.vibrate([50, 30, 50]);
+            }
+            
+            updateUI();
+            
+            setTimeout(() => {
+                questionIndex++;
+                showQuestion();
+            }, 1500);
+        }
+        
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            document.getElementById('categorySelect').style.display = 'flex';
+            
+            GameUtils.playSound('levelup');
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { 
+                    correct: correctCount, 
+                    total: gameQuestions.length,
+                    category: currentCategory
+                }
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('streak').textContent = streak > 0 ? '🔥'.repeat(Math.min(streak, 5)) + streak : '0';
+            document.getElementById('correct').textContent = `${correctCount}/${questionIndex}`;
+        }
+        
+        function getCategoryEmoji(cat) {
+            const emojis = { science: '🔬', history: '📜', geography: '🌍', entertainment: '🎬' };
+            return emojis[cat] || '🎲';
+        }
+        
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+        
+        // Category selection
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.cat;
+            });
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        
+        // Initialize
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+    </script>
+</body>
+</html>

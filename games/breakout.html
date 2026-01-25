@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Breakout - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏓</text></svg>">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🏓 Breakout</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Lives</div>
+                <div class="value" id="lives">3</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Level</div>
+                <div class="value" id="level">1</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <canvas id="gameCanvas" class="game-canvas" width="480" height="400"></canvas>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="startBtn">▶ Start Game</button>
+        </div>
+
+        <div class="mobile-controls" style="display: flex;">
+            <button class="mobile-btn" id="leftBtn" style="width:100px;">← Left</button>
+            <button class="mobile-btn" id="rightBtn" style="width:100px;">Right →</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Move the paddle with mouse, touch, or arrow keys</li>
+                <li>Break all bricks to advance to the next level</li>
+                <li>Don't let the ball fall!</li>
+                <li>Different colored bricks = different points</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'breakout';
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const BRICK_ROWS = 5;
+        const BRICK_COLS = 10;
+        const BRICK_WIDTH = 44;
+        const BRICK_HEIGHT = 15;
+        const BRICK_PADDING = 4;
+        const BRICK_OFFSET_TOP = 40;
+        const BRICK_OFFSET_LEFT = 5;
+        
+        const PADDLE_WIDTH = 80;
+        const PADDLE_HEIGHT = 12;
+        const BALL_RADIUS = 8;
+        
+        const COLORS = {
+            bricks: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6'],
+            paddle: '#fff',
+            ball: '#fff',
+            bg: '#0a0a0f'
+        };
+        
+        let bricks = [];
+        let paddle = { x: 0, y: 0, width: PADDLE_WIDTH };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0 };
+        let score = 0;
+        let lives = 3;
+        let level = 1;
+        let isRunning = false;
+        let animationId = null;
+        
+        function createBricks() {
+            bricks = [];
+            for (let row = 0; row < BRICK_ROWS; row++) {
+                for (let col = 0; col < BRICK_COLS; col++) {
+                    bricks.push({
+                        x: col * (BRICK_WIDTH + BRICK_PADDING) + BRICK_OFFSET_LEFT,
+                        y: row * (BRICK_HEIGHT + BRICK_PADDING) + BRICK_OFFSET_TOP,
+                        width: BRICK_WIDTH,
+                        height: BRICK_HEIGHT,
+                        color: COLORS.bricks[row],
+                        points: (BRICK_ROWS - row) * 10,
+                        alive: true
+                    });
+                }
+            }
+        }
+        
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height - 60;
+            const speed = 4 + level * 0.5;
+            const angle = (Math.random() * 60 + 60) * Math.PI / 180;
+            ball.dx = Math.cos(angle) * speed * (Math.random() > 0.5 ? 1 : -1);
+            ball.dy = -Math.sin(angle) * speed;
+        }
+        
+        function resetPaddle() {
+            paddle.x = (canvas.width - PADDLE_WIDTH) / 2;
+            paddle.y = canvas.height - 25;
+        }
+        
+        function init() {
+            createBricks();
+            resetPaddle();
+            resetBall();
+            updateUI();
+            draw();
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function draw() {
+            // Clear
+            ctx.fillStyle = COLORS.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Bricks
+            bricks.forEach(brick => {
+                if (brick.alive) {
+                    ctx.fillStyle = brick.color;
+                    ctx.beginPath();
+                    ctx.roundRect(brick.x, brick.y, brick.width, brick.height, 4);
+                    ctx.fill();
+                    
+                    // Highlight
+                    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                    ctx.fillRect(brick.x, brick.y, brick.width, 3);
+                }
+            });
+            
+            // Paddle
+            ctx.fillStyle = COLORS.paddle;
+            ctx.beginPath();
+            ctx.roundRect(paddle.x, paddle.y, paddle.width, PADDLE_HEIGHT, 6);
+            ctx.fill();
+            
+            // Ball with glow
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 10;
+            ctx.fillStyle = COLORS.ball;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+        
+        function update() {
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Wall collision
+            if (ball.x <= BALL_RADIUS || ball.x >= canvas.width - BALL_RADIUS) {
+                ball.dx = -ball.dx;
+            }
+            if (ball.y <= BALL_RADIUS) {
+                ball.dy = -ball.dy;
+            }
+            
+            // Paddle collision
+            if (ball.y + BALL_RADIUS >= paddle.y &&
+                ball.y - BALL_RADIUS <= paddle.y + PADDLE_HEIGHT &&
+                ball.x >= paddle.x &&
+                ball.x <= paddle.x + paddle.width) {
+                
+                // Calculate angle based on where ball hits paddle
+                const hitPos = (ball.x - paddle.x) / paddle.width;
+                const angle = (hitPos - 0.5) * Math.PI * 0.7;
+                const speed = Math.sqrt(ball.dx * ball.dx + ball.dy * ball.dy);
+                
+                ball.dx = Math.sin(angle) * speed;
+                ball.dy = -Math.abs(Math.cos(angle) * speed);
+                ball.y = paddle.y - BALL_RADIUS;
+                
+                GameUtils.playSound('point');
+                GameUtils.vibrate(20);
+            }
+            
+            // Ball fell
+            if (ball.y > canvas.height) {
+                lives--;
+                updateUI();
+                
+                if (lives <= 0) {
+                    gameOver();
+                    return;
+                }
+                
+                resetBall();
+            }
+            
+            // Brick collision
+            bricks.forEach(brick => {
+                if (brick.alive &&
+                    ball.x + BALL_RADIUS > brick.x &&
+                    ball.x - BALL_RADIUS < brick.x + brick.width &&
+                    ball.y + BALL_RADIUS > brick.y &&
+                    ball.y - BALL_RADIUS < brick.y + brick.height) {
+                    
+                    brick.alive = false;
+                    ball.dy = -ball.dy;
+                    score += brick.points * level;
+                    updateUI();
+                    GameUtils.playSound('point');
+                    GameUtils.vibrate(30);
+                    
+                    // Check level complete
+                    if (bricks.every(b => !b.alive)) {
+                        levelUp();
+                    }
+                }
+            });
+            
+            draw();
+            
+            if (isRunning) {
+                animationId = requestAnimationFrame(update);
+            }
+        }
+        
+        function levelUp() {
+            level++;
+            GameUtils.playSound('levelup');
+            createBricks();
+            resetBall();
+            paddle.width = Math.max(40, PADDLE_WIDTH - (level - 1) * 5);
+            updateUI();
+        }
+        
+        function gameOver() {
+            isRunning = false;
+            cancelAnimationFrame(animationId);
+            GameUtils.playSound('gameover');
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { level, lives }
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('lives').textContent = lives;
+            document.getElementById('level').textContent = level;
+        }
+        
+        function startGame() {
+            score = 0;
+            lives = 3;
+            level = 1;
+            paddle.width = PADDLE_WIDTH;
+            isRunning = true;
+            init();
+            update();
+            document.getElementById('startBtn').textContent = '🔄 Restart';
+        }
+        
+        // Mouse/Touch controls
+        function movePaddle(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, x - paddle.width / 2));
+            if (!isRunning) draw();
+        }
+        
+        canvas.addEventListener('mousemove', (e) => movePaddle(e.clientX));
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            movePaddle(e.touches[0].clientX);
+        }, { passive: false });
+        
+        // Keyboard controls
+        let keysPressed = {};
+        document.addEventListener('keydown', (e) => {
+            keysPressed[e.key] = true;
+            if (e.key === ' ' && !isRunning) {
+                e.preventDefault();
+                startGame();
+            }
+        });
+        document.addEventListener('keyup', (e) => keysPressed[e.key] = false);
+        
+        setInterval(() => {
+            if (keysPressed['ArrowLeft'] || keysPressed['a']) {
+                paddle.x = Math.max(0, paddle.x - 8);
+            }
+            if (keysPressed['ArrowRight'] || keysPressed['d']) {
+                paddle.x = Math.min(canvas.width - paddle.width, paddle.x + 8);
+            }
+            if (!isRunning) draw();
+        }, 16);
+        
+        // Mobile buttons
+        let moveInterval = null;
+        const startMove = (dir) => {
+            moveInterval = setInterval(() => {
+                paddle.x = Math.max(0, Math.min(canvas.width - paddle.width, paddle.x + dir * 10));
+                if (!isRunning) draw();
+            }, 16);
+        };
+        const stopMove = () => clearInterval(moveInterval);
+        
+        document.getElementById('leftBtn').addEventListener('mousedown', () => startMove(-1));
+        document.getElementById('leftBtn').addEventListener('touchstart', (e) => { e.preventDefault(); startMove(-1); });
+        document.getElementById('rightBtn').addEventListener('mousedown', () => startMove(1));
+        document.getElementById('rightBtn').addEventListener('touchstart', (e) => { e.preventDefault(); startMove(1); });
+        ['mouseup', 'mouseleave', 'touchend'].forEach(evt => {
+            document.getElementById('leftBtn').addEventListener(evt, stopMove);
+            document.getElementById('rightBtn').addEventListener(evt, stopMove);
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        
+        // Initialize
+        init();
+    </script>
+</body>
+</html>
