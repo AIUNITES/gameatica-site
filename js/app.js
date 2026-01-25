@@ -14,6 +14,17 @@ function togglePassword(inputId, btn) {
   }
 }
 
+// Game emoji lookup
+const GAME_EMOJIS = {
+  snake: '🐍', tetris: '🧱', breakout: '🧱', flappy: '🐦', pong: '🏓', asteroids: '☄️',
+  '2048': '🔢', memory: '🧠', minesweeper: '💣', sudoku: '9️⃣', sliding: '🧩', match3: '💎',
+  typing: '⌨️', reaction: '⚡', simon: '🎨', trivia: '❓', wordguess: '📝', blackjack: '🃏',
+  startrader: '🚀', algebra: '🔤', calculus: '∫', trig: '📐', mathspeed: '⚡',
+  geometry: '📏', fractions: '🥧', statistics: '📊', prealgebra: '🔢', numbertheory: '🔍',
+  matrices: '🔲', wordproblems: '📝', mathfacts: '✖️', grammar: '📖', spelling: '🐝',
+  punctuation: '✏️', literature: '📚'
+};
+
 const App = {
   /**
    * Initialize the app
@@ -22,6 +33,7 @@ const App = {
     this.bindEvents();
     this.checkAuth();
     this.updatePlayCount();
+    this.loadGlobalLeaderboards();
   },
 
   /**
@@ -57,9 +69,14 @@ const App = {
       adminLink.style.display = user.isAdmin ? 'block' : 'none';
     }
     
-    // Update stats
-    const stats = Storage.getUserStats(user.username);
-    document.getElementById('playerStats').textContent = `${stats.totalPlays} games played • ${stats.totalScore} total points`;
+    // Update stats - try SQL first, then localStorage
+    let stats;
+    if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+      stats = SQLDatabase.getUserStats(user.username);
+    } else {
+      stats = Storage.getUserStats(user.username);
+    }
+    document.getElementById('playerStats').textContent = `${stats.totalPlays} games played • ${stats.totalScore.toLocaleString()} total points`;
   },
 
   /**
@@ -151,6 +168,121 @@ const App = {
     });
   },
 
+  // ==================== LEADERBOARDS ====================
+
+  /**
+   * Load and display global leaderboards on main page
+   */
+  loadGlobalLeaderboards() {
+    const container = document.getElementById('leaderboards-grid');
+    if (!container) return;
+    
+    // Popular games to show leaderboards for
+    const popularGames = ['snake', 'tetris', '2048', 'typing', 'trivia', 'mathspeed'];
+    
+    // Wait for SQLDatabase to initialize
+    setTimeout(() => {
+      let hasScores = false;
+      let html = '';
+      
+      popularGames.forEach(gameId => {
+        let scores = [];
+        
+        // Try SQL Database first
+        if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+          scores = SQLDatabase.getTopScores(gameId, 5);
+        }
+        
+        // Fall back to localStorage
+        if (scores.length === 0 && typeof GameUtils !== 'undefined') {
+          scores = GameUtils.getHighScores(gameId, 5);
+        }
+        
+        if (scores.length > 0) {
+          hasScores = true;
+          const emoji = GAME_EMOJIS[gameId] || '🎮';
+          const gameName = this.formatGameName(gameId);
+          
+          html += `
+            <div class="leaderboard-card">
+              <h3><span class="game-emoji">${emoji}</span> ${gameName}</h3>
+              <div class="leaderboard-list">
+                ${scores.map((s, i) => this.renderLeaderboardEntry(s, i)).join('')}
+              </div>
+            </div>
+          `;
+        }
+      });
+      
+      if (!hasScores) {
+        html = `
+          <div class="no-leaderboards">
+            <p>🏆 No scores yet! Be the first to set a record.</p>
+            <p style="margin-top:10px;font-size:0.9rem;">Play any game to appear on the leaderboard.</p>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
+    }, 500); // Wait for DB to load
+  },
+  
+  /**
+   * Render a single leaderboard entry
+   */
+  renderLeaderboardEntry(score, index) {
+    const medals = ['🥇', '🥈', '🥉'];
+    const medal = medals[index] || `<span class="rank-num">#${index + 1}</span>`;
+    const displayName = score.displayName || score.name || score.username || 'Player';
+    const isPlayer = this.isCurrentPlayer(score);
+    
+    return `
+      <div class="leaderboard-entry ${isPlayer ? 'is-player' : ''}">
+        <span class="rank">${medal}</span>
+        <span class="name">${this.escapeHtml(displayName)}</span>
+        <span class="score">${this.formatNumber(score.score)}</span>
+      </div>
+    `;
+  },
+  
+  /**
+   * Check if score belongs to current user
+   */
+  isCurrentPlayer(score) {
+    if (!Auth.isLoggedIn()) return false;
+    const user = Auth.getCurrentUser();
+    return score.username === user.username || score.name === user.displayName;
+  },
+  
+  /**
+   * Format game ID to display name
+   */
+  formatGameName(gameId) {
+    const names = {
+      snake: 'Snake', tetris: 'Tetris', '2048': '2048', typing: 'Typing Test',
+      trivia: 'Trivia Quiz', mathspeed: 'Math Speed', memory: 'Memory Match',
+      minesweeper: 'Minesweeper', sudoku: 'Sudoku', breakout: 'Breakout',
+      flappy: 'Flappy', pong: 'Pong', asteroids: 'Asteroids', simon: 'Simon Says',
+      reaction: 'Reaction Test', wordguess: 'Word Guess', blackjack: 'Blackjack',
+      match3: 'Match 3', sliding: 'Sliding Puzzle', startrader: 'Star Trader',
+      algebra: 'Algebra Quest', calculus: 'Calculus', trig: 'Trig Master',
+      geometry: 'Geometry Pro', fractions: 'Fractions', statistics: 'Statistics',
+      prealgebra: 'Pre-Algebra', numbertheory: 'Number Theory', matrices: 'Matrix Math',
+      wordproblems: 'Word Problems', mathfacts: 'Math Facts', grammar: 'Grammar Galaxy',
+      spelling: 'Spelling Bee', punctuation: 'Punctuation Pro', literature: 'Literary Legends'
+    };
+    return names[gameId] || gameId.charAt(0).toUpperCase() + gameId.slice(1);
+  },
+  
+  /**
+   * Format large numbers
+   */
+  formatNumber(num) {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toLocaleString();
+  },
+
   // ==================== AUTH ====================
 
   openAuthModal(tab = 'login') {
@@ -182,6 +314,7 @@ const App = {
       this.closeAuthModal();
       this.showToast('Welcome back!', 'success');
       this.checkAuth();
+      this.loadGlobalLeaderboards(); // Refresh to highlight user
     } catch (error) {
       document.getElementById('login-error').textContent = error.message;
     }
@@ -227,6 +360,7 @@ const App = {
     document.getElementById('user-dropdown')?.classList.remove('active');
     this.showToast('Logged out successfully', 'success');
     this.checkAuth();
+    this.loadGlobalLeaderboards();
   },
 
   toggleUserMenu() {
@@ -287,7 +421,13 @@ const App = {
     const user = Auth.getCurrentUser();
     if (!user) return;
 
-    const stats = Storage.getUserStats(user.username);
+    // Try SQL stats first
+    let stats;
+    if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+      stats = SQLDatabase.getUserStats(user.username);
+    } else {
+      stats = Storage.getUserStats(user.username);
+    }
     
     document.getElementById('profile-display-name').textContent = user.displayName;
     document.getElementById('profile-username').textContent = '@' + user.username;
@@ -306,8 +446,8 @@ const App = {
       games.sort((a, b) => b[1].bestScore - a[1].bestScore);
       gamesList.innerHTML = games.slice(0, 10).map(([gameId, data]) => `
         <div class="profile-game-item">
-          <span class="game-name">${gameId}</span>
-          <span class="game-best">Best: ${data.bestScore.toLocaleString()}</span>
+          <span class="game-name">${GAME_EMOJIS[gameId] || '🎮'} ${this.formatGameName(gameId)}</span>
+          <span class="game-best">Best: ${this.formatNumber(data.bestScore)}</span>
           <span class="game-plays">${data.plays} plays</span>
         </div>
       `).join('');
@@ -353,13 +493,21 @@ const App = {
   },
 
   loadAdminStats() {
-    const users = Storage.getUsers();
-    const scores = Storage.getAllScores();
+    // Try SQL Database first
+    if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+      const stats = SQLDatabase.getGlobalStats();
+      document.getElementById('admin-stat-users').textContent = Storage.getUsers() ? Object.keys(Storage.getUsers()).length : 0;
+      document.getElementById('admin-stat-scores').textContent = stats.totalScores;
+    } else {
+      // Fall back to localStorage
+      const users = Storage.getUsers();
+      const scores = Storage.getAllScores();
+      const totalScores = Object.values(scores).reduce((sum, arr) => sum + arr.length, 0);
+      
+      document.getElementById('admin-stat-users').textContent = Object.keys(users).length;
+      document.getElementById('admin-stat-scores').textContent = totalScores;
+    }
     
-    const totalScores = Object.values(scores).reduce((sum, arr) => sum + arr.length, 0);
-    
-    document.getElementById('admin-stat-users').textContent = Object.keys(users).length;
-    document.getElementById('admin-stat-scores').textContent = totalScores;
     document.getElementById('admin-version').textContent = 'v' + APP_CONFIG.version;
   },
 
@@ -370,47 +518,84 @@ const App = {
     document.getElementById('users-count').textContent = `${userList.length} users`;
     
     const table = document.getElementById('users-table');
-    table.innerHTML = userList.map(user => `
-      <div class="user-row">
-        <div class="user-info">
-          <div class="user-avatar-small">${user.displayName.charAt(0).toUpperCase()}</div>
-          <div>
-            <div class="user-row-name">${this.escapeHtml(user.displayName)}</div>
-            <div class="user-row-username">@${user.username} ${user.isAdmin ? '🛡️' : ''}</div>
-          </div>
-        </div>
-        <div class="user-meta">
-          <span>${user.stats?.totalPlays || 0} plays</span>
-          <span>${(user.stats?.totalScore || 0).toLocaleString()} pts</span>
-        </div>
-      </div>
-    `).join('');
-  },
-
-  loadAdminLeaderboards() {
-    const scores = Storage.getAllScores();
-    const container = document.getElementById('admin-leaderboards');
-    
-    const games = Object.keys(scores);
-    if (games.length === 0) {
-      container.innerHTML = '<p style="color:var(--gray);text-align:center;">No scores recorded yet</p>';
-      return;
-    }
-    
-    container.innerHTML = games.slice(0, 5).map(gameId => {
-      const topScores = scores[gameId].slice(0, 3);
+    table.innerHTML = userList.map(user => {
+      // Get stats from SQL if available
+      let stats = user.stats || { totalPlays: 0, totalScore: 0 };
+      if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+        const sqlStats = SQLDatabase.getUserStats(user.username);
+        if (sqlStats.totalPlays > 0) stats = sqlStats;
+      }
+      
       return `
-        <div class="admin-game-leaderboard">
-          <h4>${gameId}</h4>
-          ${topScores.map((s, i) => `
-            <div class="mini-score">
-              <span>${['🥇','🥈','🥉'][i]} ${s.displayName || s.username}</span>
-              <span>${s.score.toLocaleString()}</span>
+        <div class="user-row">
+          <div class="user-info">
+            <div class="user-avatar-small">${user.displayName.charAt(0).toUpperCase()}</div>
+            <div>
+              <div class="user-row-name">${this.escapeHtml(user.displayName)}</div>
+              <div class="user-row-username">@${user.username} ${user.isAdmin ? '🛡️' : ''}</div>
             </div>
-          `).join('')}
+          </div>
+          <div class="user-meta">
+            <span>${stats.totalPlays} plays</span>
+            <span>${this.formatNumber(stats.totalScore)} pts</span>
+          </div>
         </div>
       `;
     }).join('');
+  },
+
+  loadAdminLeaderboards() {
+    const container = document.getElementById('admin-leaderboards');
+    
+    // Try SQL Database first
+    if (typeof SQLDatabase !== 'undefined' && SQLDatabase.isLoaded) {
+      const leaderboards = SQLDatabase.getAllLeaderboards(3);
+      const games = Object.keys(leaderboards);
+      
+      if (games.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray);text-align:center;">No scores recorded yet</p>';
+        return;
+      }
+      
+      container.innerHTML = games.slice(0, 6).map(gameId => {
+        const scores = leaderboards[gameId];
+        return `
+          <div class="admin-game-leaderboard">
+            <h4>${GAME_EMOJIS[gameId] || '🎮'} ${this.formatGameName(gameId)}</h4>
+            ${scores.map((s, i) => `
+              <div class="mini-score">
+                <span>${['🥇','🥈','🥉'][i]} ${this.escapeHtml(s.displayName || s.username)}</span>
+                <span>${this.formatNumber(s.score)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+    } else {
+      // Fall back to localStorage
+      const scores = Storage.getAllScores();
+      const games = Object.keys(scores);
+      
+      if (games.length === 0) {
+        container.innerHTML = '<p style="color:var(--gray);text-align:center;">No scores recorded yet</p>';
+        return;
+      }
+      
+      container.innerHTML = games.slice(0, 6).map(gameId => {
+        const topScores = scores[gameId].slice(0, 3);
+        return `
+          <div class="admin-game-leaderboard">
+            <h4>${GAME_EMOJIS[gameId] || '🎮'} ${this.formatGameName(gameId)}</h4>
+            ${topScores.map((s, i) => `
+              <div class="mini-score">
+                <span>${['🥇','🥈','🥉'][i]} ${this.escapeHtml(s.displayName || s.username)}</span>
+                <span>${this.formatNumber(s.score)}</span>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+    }
   },
 
   loadChangelog() {

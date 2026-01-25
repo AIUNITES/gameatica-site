@@ -8,7 +8,7 @@ const APP_CONFIG = {
   tagline: 'Free Online Arcade Games',
   description: 'Play and compete on leaderboards!',
   icon: '🎮',
-  version: '2.5.0',
+  version: '2.6.0',
   lastUpdated: '2026-01-25',
   
   // Storage keys prefix
@@ -44,6 +44,18 @@ const APP_CONFIG = {
   
   // Changelog
   changelog: [
+    {
+      version: 'v2.6.0',
+      date: 'January 25, 2026',
+      changes: [
+        'Added SQL database integration',
+        'Added game_scores table for persistent storage',
+        'Added Data Sources admin tab',
+        'Added SQL Database admin tab with GitHub Sync',
+        'Leaderboards now pull from SQL database',
+        'Scores auto-sync to AIUNITES shared database'
+      ]
+    },
     {
       version: 'v2.5.0',
       date: 'January 25, 2026',

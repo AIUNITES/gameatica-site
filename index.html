@@ -186,6 +186,47 @@
         .db-info-note { color: var(--gray); font-size: 0.85rem; margin-bottom: 15px; }
         .db-actions { display: flex; gap: 10px; flex-wrap: wrap; }
         
+        /* Leaderboards Section */
+        .leaderboards-section { margin-top: 60px; padding-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); }
+        .section-title { font-size: 2rem; font-weight: 800; text-align: center; margin-bottom: 10px; }
+        .section-subtitle { color: var(--gray); text-align: center; margin-bottom: 30px; }
+        .leaderboards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .leaderboard-card { background: var(--dark-light); border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); }
+        .leaderboard-card h3 { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .leaderboard-card h3 .game-emoji { font-size: 1.5rem; }
+        .leaderboard-list { display: flex; flex-direction: column; gap: 8px; }
+        .leaderboard-entry { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--dark); border-radius: 10px; transition: all 0.2s; }
+        .leaderboard-entry:hover { background: rgba(255,255,255,0.05); }
+        .leaderboard-entry.is-player { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+        .leaderboard-entry .rank { font-size: 1.2rem; min-width: 30px; text-align: center; }
+        .leaderboard-entry .rank-num { color: var(--gray); font-size: 0.9rem; }
+        .leaderboard-entry .name { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .leaderboard-entry .score { font-weight: 700; color: var(--primary); }
+        .leaderboard-empty { text-align: center; padding: 20px; color: var(--gray); }
+        .leaderboard-empty .login-hint { margin-top: 10px; font-size: 0.85rem; }
+        .leaderboard-empty .login-hint a { color: var(--primary); }
+        .personal-best-badge { text-align: center; margin-top: 12px; padding: 8px; background: rgba(34,197,94,0.1); border-radius: 8px; color: #22c55e; font-size: 0.85rem; font-weight: 600; }
+        .login-hint { text-align: center; margin-top: 10px; font-size: 0.8rem; color: var(--gray); }
+        .login-hint a { color: var(--primary); text-decoration: none; }
+        .login-hint a:hover { text-decoration: underline; }
+        .no-leaderboards { text-align: center; padding: 40px; color: var(--gray); grid-column: 1 / -1; }
+        
+        /* Game Over Modal */
+        .game-over-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 10003; opacity: 0; transition: opacity 0.3s; }
+        .game-over-overlay.visible { opacity: 1; }
+        .game-over-modal { background: var(--dark-light); border-radius: 20px; padding: 40px; text-align: center; max-width: 400px; width: 90%; }
+        .game-over-modal h2 { font-size: 1.8rem; margin-bottom: 20px; }
+        .game-over-modal .final-score { font-size: 4rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 15px; }
+        .game-over-modal .new-record-text { color: #22c55e; font-weight: 600; margin-bottom: 15px; }
+        .game-over-modal .score-details { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .game-over-modal .score-details .detail { display: flex; justify-content: space-between; padding: 8px 15px; background: var(--dark); border-radius: 8px; font-size: 0.9rem; }
+        .game-over-modal .login-prompt { color: var(--gray); font-size: 0.9rem; margin-bottom: 20px; }
+        .game-over-modal .login-prompt a { color: var(--primary); }
+        .game-over-buttons { display: flex; gap: 10px; justify-content: center; }
+        .game-over-buttons .btn { padding: 12px 24px; border-radius: 10px; font-size: 1rem; cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; }
+        .game-over-buttons .btn-primary { background: var(--gradient); color: white; }
+        .game-over-buttons .btn-secondary { background: rgba(255,255,255,0.1); color: white; }
+        
         @media (max-width: 768px) {
             .stats-bar { flex-wrap: wrap; gap: 20px; }
             .stat-item .number { font-size: 2rem; }
@@ -281,6 +322,15 @@
 
         <div class="games-grid" id="gamesGrid">
             <!-- Games populated by JS -->
+        </div>
+
+        <!-- Global Leaderboards Section -->
+        <div class="leaderboards-section" id="leaderboards-section">
+            <h2 class="section-title">🏆 Top Players</h2>
+            <p class="section-subtitle">Compete for the high scores!</p>
+            <div class="leaderboards-grid" id="leaderboards-grid">
+                <!-- Populated by JS -->
+            </div>
         </div>
     </section>
 
