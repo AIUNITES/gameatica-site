@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Literary Legends - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .quote-box {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 25px 30px;
+            margin: 20px auto;
+            max-width: 550px;
+            font-size: 1.25rem;
+            line-height: 1.7;
+            text-align: left;
+            font-style: italic;
+            border-left: 4px solid var(--primary);
+            position: relative;
+        }
+        .quote-box::before {
+            content: '"';
+            font-size: 4rem;
+            color: rgba(239, 68, 68, 0.3);
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-family: Georgia, serif;
+        }
+        .example-box {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 20px 25px;
+            margin: 20px auto;
+            max-width: 550px;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+        .example-box .highlight {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .question-text {
+            font-size: 1.15rem;
+            color: var(--gray-light);
+            margin: 20px 0;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .option-btn {
+            padding: 15px 20px;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: var(--gray-light);
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+        }
+        .explanation.visible { display: block; }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📚 Literary Legends</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="devices">Literary Devices</button>
+            <button class="topic-btn" data-topic="authors">Authors & Works</button>
+            <button class="topic-btn" data-topic="genres">Genres</button>
+            <button class="topic-btn" data-topic="terms">Literary Terms</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Literary Devices</div>
+                <div class="quote-box" id="contentBox">
+                    The wind howled in the night.
+                </div>
+                <div class="question-text" id="question">What literary device is used here?</div>
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options rendered by JS -->
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Literary Devices:</strong> Simile, metaphor, personification, etc.</li>
+                <li><strong>Authors & Works:</strong> Famous writers and their books</li>
+                <li><strong>Genres:</strong> Types of literature</li>
+                <li><strong>Literary Terms:</strong> Protagonist, theme, conflict, etc.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'literature';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let topic = 'devices';
+        let currentProblem = null;
+        let answered = false;
+        
+        const PROBLEMS = {
+            devices: [
+                { content: 'The wind <span class="highlight">howled</span> in the night.', question: 'What literary device is used?', options: ['Personification', 'Simile', 'Metaphor', 'Alliteration'], answer: 0, explanation: 'Personification gives human qualities (howling) to non-human things (wind).' },
+                { content: 'Her smile was <span class="highlight">like</span> sunshine.', question: 'What literary device is used?', options: ['Simile', 'Metaphor', 'Hyperbole', 'Onomatopoeia'], answer: 0, explanation: 'A simile compares two things using "like" or "as."' },
+                { content: 'Time <span class="highlight">is</span> money.', question: 'What literary device is used?', options: ['Metaphor', 'Simile', 'Personification', 'Irony'], answer: 0, explanation: 'A metaphor directly states one thing IS another without using "like" or "as."' },
+                { content: '<span class="highlight">Peter Piper picked</span> a peck of pickled peppers.', question: 'What literary device is used?', options: ['Alliteration', 'Assonance', 'Onomatopoeia', 'Rhyme'], answer: 0, explanation: 'Alliteration is the repetition of initial consonant sounds (P, P, P...).' },
+                { content: 'The <span class="highlight">buzz</span> of the bees filled the garden.', question: 'What literary device is used?', options: ['Onomatopoeia', 'Alliteration', 'Metaphor', 'Hyperbole'], answer: 0, explanation: 'Onomatopoeia uses words that imitate sounds (buzz, crash, sizzle).' },
+                { content: 'I\'ve told you a <span class="highlight">million times</span>!', question: 'What literary device is used?', options: ['Hyperbole', 'Metaphor', 'Irony', 'Simile'], answer: 0, explanation: 'Hyperbole is extreme exaggeration for emphasis or effect.' },
+                { content: 'The <span class="highlight">fire station burned down</span> while the firefighters were away.', question: 'What literary device is used?', options: ['Irony', 'Metaphor', 'Foreshadowing', 'Symbolism'], answer: 0, explanation: 'Situational irony is when the opposite of what\'s expected happens.' },
+                { content: 'The <span class="highlight">dove</span> was released at the peace ceremony.', question: 'What literary device is used?', options: ['Symbolism', 'Metaphor', 'Irony', 'Allusion'], answer: 0, explanation: 'Symbolism uses objects to represent abstract ideas (dove = peace).' },
+                { content: 'He was a <span class="highlight">real Romeo</span> with the ladies.', question: 'What literary device is used?', options: ['Allusion', 'Metaphor', 'Simile', 'Personification'], answer: 0, explanation: 'An allusion is a reference to a well-known person, place, event, or work (Romeo from Shakespeare).' },
+                { content: 'The old man sat <span class="highlight">alone</span> in the empty house — a hint of the <span class="highlight">loneliness</span> that would define his final days.', question: 'What literary device is used?', options: ['Foreshadowing', 'Flashback', 'Irony', 'Hyperbole'], answer: 0, explanation: 'Foreshadowing hints at events that will occur later in the story.' }
+            ],
+            authors: [
+                { content: 'Who wrote "Romeo and Juliet"?', question: 'Select the correct author:', options: ['William Shakespeare', 'Charles Dickens', 'Jane Austen', 'Mark Twain'], answer: 0, explanation: 'William Shakespeare wrote Romeo and Juliet around 1594-1596.' },
+                { content: 'Who wrote "Pride and Prejudice"?', question: 'Select the correct author:', options: ['Jane Austen', 'Emily Brontë', 'Charlotte Brontë', 'Virginia Woolf'], answer: 0, explanation: 'Jane Austen published Pride and Prejudice in 1813.' },
+                { content: 'Who wrote "1984"?', question: 'Select the correct author:', options: ['George Orwell', 'Aldous Huxley', 'Ray Bradbury', 'H.G. Wells'], answer: 0, explanation: 'George Orwell wrote 1984, published in 1949.' },
+                { content: 'Who wrote "The Great Gatsby"?', question: 'Select the correct author:', options: ['F. Scott Fitzgerald', 'Ernest Hemingway', 'John Steinbeck', 'William Faulkner'], answer: 0, explanation: 'F. Scott Fitzgerald wrote The Great Gatsby, published in 1925.' },
+                { content: 'Who wrote "To Kill a Mockingbird"?', question: 'Select the correct author:', options: ['Harper Lee', 'Toni Morrison', 'Maya Angelou', 'Alice Walker'], answer: 0, explanation: 'Harper Lee wrote To Kill a Mockingbird, published in 1960.' },
+                { content: 'Who wrote "The Raven"?', question: 'Select the correct author:', options: ['Edgar Allan Poe', 'Walt Whitman', 'Emily Dickinson', 'Robert Frost'], answer: 0, explanation: 'Edgar Allan Poe published The Raven in 1845.' },
+                { content: 'Who wrote "Moby-Dick"?', question: 'Select the correct author:', options: ['Herman Melville', 'Nathaniel Hawthorne', 'Mark Twain', 'Jack London'], answer: 0, explanation: 'Herman Melville wrote Moby-Dick, published in 1851.' },
+                { content: 'Who wrote "The Odyssey"?', question: 'Select the correct author:', options: ['Homer', 'Virgil', 'Sophocles', 'Plato'], answer: 0, explanation: 'Homer is credited with writing The Odyssey (c. 8th century BC).' }
+            ],
+            genres: [
+                { content: 'A story set in a medieval kingdom with dragons, magic, and elves.', question: 'What genre is this?', options: ['Fantasy', 'Science Fiction', 'Historical Fiction', 'Mythology'], answer: 0, explanation: 'Fantasy features magical elements, mythical creatures, and imaginary worlds.' },
+                { content: 'A story about a detective solving a murder case.', question: 'What genre is this?', options: ['Mystery', 'Thriller', 'Horror', 'Drama'], answer: 0, explanation: 'Mystery stories focus on solving crimes or puzzles, often featuring detectives.' },
+                { content: 'A story set on a spaceship traveling to distant galaxies in the year 3000.', question: 'What genre is this?', options: ['Science Fiction', 'Fantasy', 'Adventure', 'Dystopian'], answer: 0, explanation: 'Science fiction deals with futuristic technology, space travel, and scientific concepts.' },
+                { content: 'A story about surviving in a totalitarian society where the government controls everything.', question: 'What genre is this?', options: ['Dystopian', 'Utopian', 'Political Thriller', 'Historical Fiction'], answer: 0, explanation: 'Dystopian fiction portrays oppressive societies, often warning about political/social trends.' },
+                { content: 'A story about love between two people who face obstacles to be together.', question: 'What genre is this?', options: ['Romance', 'Drama', 'Comedy', 'Tragedy'], answer: 0, explanation: 'Romance centers on love and romantic relationships as the main plot.' },
+                { content: 'A story told through exaggerated characters and their humorous misadventures.', question: 'What genre is this?', options: ['Satire', 'Comedy', 'Parody', 'Farce'], answer: 0, explanation: 'Satire uses humor, irony, and exaggeration to criticize society or individuals.' },
+                { content: 'A true story about a real person\'s life written by that person.', question: 'What genre is this?', options: ['Autobiography', 'Biography', 'Memoir', 'Non-fiction'], answer: 0, explanation: 'An autobiography is a self-written account of one\'s own life.' }
+            ],
+            terms: [
+                { content: 'The main character in a story who drives the plot forward.', question: 'What is this called?', options: ['Protagonist', 'Antagonist', 'Narrator', 'Foil'], answer: 0, explanation: 'The protagonist is the central character around whom the story revolves.' },
+                { content: 'The character or force that opposes the main character.', question: 'What is this called?', options: ['Antagonist', 'Protagonist', 'Anti-hero', 'Villain'], answer: 0, explanation: 'The antagonist creates conflict by opposing the protagonist.' },
+                { content: 'The central message or insight about life that a story conveys.', question: 'What is this called?', options: ['Theme', 'Plot', 'Moral', 'Motif'], answer: 0, explanation: 'Theme is the underlying meaning or main idea explored in a work.' },
+                { content: 'The time and place where a story takes place.', question: 'What is this called?', options: ['Setting', 'Scene', 'Context', 'Atmosphere'], answer: 0, explanation: 'Setting establishes where and when the story occurs.' },
+                { content: 'The sequence of events in a story (beginning, middle, end).', question: 'What is this called?', options: ['Plot', 'Theme', 'Narrative', 'Structure'], answer: 0, explanation: 'Plot is the series of events that make up a story.' },
+                { content: 'The struggle between opposing forces in a story.', question: 'What is this called?', options: ['Conflict', 'Tension', 'Crisis', 'Complication'], answer: 0, explanation: 'Conflict drives the plot and creates drama through opposing forces.' },
+                { content: 'The highest point of tension or action in a story.', question: 'What is this called?', options: ['Climax', 'Rising Action', 'Crisis', 'Resolution'], answer: 0, explanation: 'The climax is the turning point with maximum tension.' },
+                { content: 'The perspective from which a story is told (first-person, third-person, etc.).', question: 'What is this called?', options: ['Point of View', 'Narrative Voice', 'Perspective', 'Tone'], answer: 0, explanation: 'Point of view determines who is telling the story and what they can reveal.' },
+                { content: 'A recurring element or idea that appears throughout a work.', question: 'What is this called?', options: ['Motif', 'Theme', 'Symbol', 'Pattern'], answer: 0, explanation: 'A motif is a repeated element that reinforces themes or ideas.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['devices', 'authors', 'genres', 'terms'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            const problems = PROBLEMS[actualTopic];
+            currentProblem = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem.topic = actualTopic;
+            
+            const labels = {
+                devices: 'Literary Devices',
+                authors: 'Authors & Works',
+                genres: 'Genres',
+                terms: 'Literary Terms'
+            };
+            
+            document.getElementById('topicLabel').textContent = labels[actualTopic];
+            
+            const contentBox = document.getElementById('contentBox');
+            if (actualTopic === 'devices') {
+                contentBox.className = 'example-box';
+            } else {
+                contentBox.className = 'quote-box';
+            }
+            contentBox.innerHTML = currentProblem.content;
+            
+            document.getElementById('question').textContent = currentProblem.question;
+            
+            renderOptions();
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function renderOptions() {
+            const grid = document.getElementById('optionsGrid');
+            // Shuffle options
+            const shuffled = [...currentProblem.options].map((opt, i) => ({ opt, isCorrect: i === currentProblem.answer }));
+            shuffled.sort(() => Math.random() - 0.5);
+            
+            grid.innerHTML = shuffled.map((item, i) => 
+                `<button class="option-btn" data-correct="${item.isCorrect}">${item.opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(btn.dataset.correct === 'true', btn));
+            });
+        }
+        
+        function checkAnswer(isCorrect, btn) {
+            if (answered) return;
+            answered = true;
+            
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (isCorrect) {
+                btn.classList.add('correct');
+                correctCount++;
+                streak++;
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if (b.dataset.correct === 'true') b.classList.add('correct');
+                });
+                streak = 0;
+                
+                document.getElementById('feedback').textContent = `✗ Incorrect`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').textContent = '💡 ' + currentProblem.explanation;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            const hints = {
+                devices: 'Look for patterns: comparisons, human qualities, exaggeration, or sounds.',
+                authors: 'Think about the time period and writing style.',
+                genres: 'What elements define this story? Setting, theme, subject matter?',
+                terms: 'Consider what role or function this serves in storytelling.'
+            };
+            document.getElementById('feedback').textContent = '💡 ' + hints[currentProblem.topic];
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

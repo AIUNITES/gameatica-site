@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Punctuation Pro - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✏️</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .sentence-box {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px auto;
+            max-width: 550px;
+            font-size: 1.4rem;
+            line-height: 1.8;
+            text-align: left;
+            border-left: 4px solid var(--primary);
+        }
+        .sentence-box .gap {
+            display: inline-block;
+            min-width: 25px;
+            height: 30px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 4px;
+            vertical-align: middle;
+            margin: 0 2px;
+        }
+        .sentence-box .highlight {
+            background: rgba(239, 68, 68, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            color: var(--gray-light);
+            margin: 20px 0;
+        }
+        .options-grid {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .punct-btn {
+            width: 70px;
+            height: 70px;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            color: var(--white);
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .punct-btn:hover { border-color: var(--primary); transform: scale(1.05); }
+        .punct-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .punct-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .punct-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .punct-btn .label {
+            font-size: 0.7rem;
+            display: block;
+            color: var(--gray);
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: var(--gray-light);
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+        }
+        .explanation.visible { display: block; }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .reference-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: none;
+            text-align: left;
+        }
+        .reference-card.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>✏️ Punctuation Pro</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="commas">Commas</button>
+            <button class="topic-btn" data-topic="apostrophes">Apostrophes</button>
+            <button class="topic-btn" data-topic="quotes">Quotes</button>
+            <button class="topic-btn" data-topic="endmarks">End Marks</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Commas</div>
+                <div class="sentence-box" id="sentenceBox">
+                    After eating<span class="gap"></span> the dog took a nap.
+                </div>
+                <div class="question-text" id="question">What punctuation belongs in the highlighted spot?</div>
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options rendered by JS -->
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="refBtn">📖 Rules</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="reference-card" id="referenceCard">
+            <strong>Quick Rules:</strong><br><br>
+            <strong>Commas:</strong> After introductory phrases, in lists, before conjunctions (FANBOYS) in compound sentences.<br><br>
+            <strong>Apostrophes:</strong> Contractions (don't = do not), possession (dog's toy), NOT for plurals.<br><br>
+            <strong>Quotation Marks:</strong> Around direct speech, titles of short works. Periods/commas go inside.<br><br>
+            <strong>End Marks:</strong> Period (.), question mark (?), exclamation point (!).
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Commas:</strong> Lists, introductions, compound sentences</li>
+                <li><strong>Apostrophes:</strong> Contractions and possession</li>
+                <li><strong>Quotation Marks:</strong> Direct speech and titles</li>
+                <li><strong>End Marks:</strong> Periods, questions, exclamations</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'punctuation';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let topic = 'commas';
+        let currentProblem = null;
+        let answered = false;
+        
+        const PROBLEMS = {
+            commas: [
+                { sentence: 'After eating<span class="gap"></span> the dog took a nap.', options: [',', '.', ';', '—'], answer: 0, explanation: 'Use a comma after an introductory phrase.' },
+                { sentence: 'I bought apples<span class="gap"></span> oranges<span class="gap"></span> and bananas.', options: [',', ';', ':', '.'], answer: 0, explanation: 'Use commas to separate items in a list.' },
+                { sentence: 'The sun was setting<span class="gap"></span> and the birds were singing.', options: [',', '.', '!', '—'], answer: 0, explanation: 'Use a comma before a coordinating conjunction joining two independent clauses.' },
+                { sentence: 'My friend<span class="gap"></span> who lives in Paris<span class="gap"></span> is visiting.', options: [',', ':', ';', '.'], answer: 0, explanation: 'Use commas around non-essential (nonrestrictive) clauses.' },
+                { sentence: 'Well<span class="gap"></span> I suppose you\'re right.', options: [',', '.', '!', '?'], answer: 0, explanation: 'Use a comma after introductory words like "well," "yes," or "no."' },
+                { sentence: 'She is a talented<span class="gap"></span> hardworking student.', options: [',', '.', ';', ':'], answer: 0, explanation: 'Use a comma between coordinate adjectives (adjectives that equally modify the noun).' },
+                { sentence: 'The house<span class="gap"></span> which was built in 1900<span class="gap"></span> needs repairs.', options: [',', ';', ':', '—'], answer: 0, explanation: 'Use commas around nonrestrictive clauses that add extra information.' },
+                { sentence: 'However<span class="gap"></span> the plan failed.', options: [',', '.', '!', ';'], answer: 0, explanation: 'Use a comma after transitional words like "however," "therefore," "moreover."' }
+            ],
+            apostrophes: [
+                { sentence: 'The dog<span class="gap"></span>s tail was wagging.', options: ["'", ',', '.', ':'], answer: 0, explanation: 'Use an apostrophe to show possession: the tail belonging to the dog.' },
+                { sentence: 'I can<span class="gap"></span>t believe it!', options: ["'", ',', '.', '!'], answer: 0, explanation: 'Use an apostrophe in contractions: can\'t = cannot.' },
+                { sentence: 'The children<span class="gap"></span>s toys were scattered.', options: ["'", ',', ';', ':'], answer: 0, explanation: 'For irregular plurals, add \'s for possession: children\'s.' },
+                { sentence: 'It<span class="gap"></span>s going to rain today.', options: ["'", ',', '.', ':'], answer: 0, explanation: 'It\'s with an apostrophe means "it is." (Its without apostrophe = possessive)' },
+                { sentence: 'The boys<span class="gap"></span> basketball team won.', options: ["'", ',', '.', ';'], answer: 0, explanation: 'For plural nouns ending in s, put the apostrophe after: boys\' (team belonging to the boys).' },
+                { sentence: 'She<span class="gap"></span>ll be here soon.', options: ["'", ',', '.', '!'], answer: 0, explanation: 'Use an apostrophe in contractions: she\'ll = she will.' },
+                { sentence: 'That is James<span class="gap"></span> car.', options: ["'", "s", "'s", ','], answer: 0, explanation: 'For singular names ending in s, you can add just an apostrophe: James\' or James\'s.' },
+                { sentence: 'The class of <span class="gap"></span>99 had a reunion.', options: ["'", ',', '.', ':'], answer: 0, explanation: 'Use an apostrophe to replace omitted numbers: \'99 = 1999.' }
+            ],
+            quotes: [
+                { sentence: 'She said<span class="gap"></span> Hello everyone<span class="gap"></span>', options: ['"', "'", ',', '.'], answer: 0, explanation: 'Use quotation marks around direct speech.' },
+                { sentence: 'Have you read <span class="gap"></span>The Raven<span class="gap"></span> by Poe?', options: ['"', "'", ',', '.'], answer: 0, explanation: 'Use quotation marks around titles of short works (poems, articles, songs).' },
+                { sentence: '"I\'m tired<span class="gap"></span>" she said.', options: [',', '.', '!', '?'], answer: 0, explanation: 'Place commas inside quotation marks when a speaker tag follows.' },
+                { sentence: 'He asked<span class="gap"></span> "Where are you going?"', options: [',', '.', ':', ';'], answer: 0, explanation: 'Use a comma before a direct quotation.' },
+                { sentence: '"Stop<span class="gap"></span>" she yelled.', options: ['!', '.', ',', '?'], answer: 0, explanation: 'Exclamation points go inside quotes when part of the quoted material.' },
+                { sentence: 'The sign said <span class="gap"></span>No Parking<span class="gap"></span>.', options: ['"', "'", '—', ':'], answer: 0, explanation: 'Use quotation marks around words being referenced as words or signs.' },
+                { sentence: '"Did you finish<span class="gap"></span>" he asked.', options: ['?', '.', '!', ','], answer: 0, explanation: 'Question marks go inside quotes when the quote itself is a question.' }
+            ],
+            endmarks: [
+                { sentence: 'What time is it<span class="gap"></span>', options: ['?', '.', '!', ','], answer: 0, explanation: 'Questions end with a question mark.' },
+                { sentence: 'Watch out<span class="gap"></span>', options: ['!', '.', '?', ','], answer: 0, explanation: 'Exclamations and commands with strong emotion end with an exclamation point.' },
+                { sentence: 'The cat sat on the mat<span class="gap"></span>', options: ['.', '!', '?', ','], answer: 0, explanation: 'Statements end with a period.' },
+                { sentence: 'How wonderful<span class="gap"></span>', options: ['!', '.', '?', ','], answer: 0, explanation: 'Exclamatory sentences expressing strong feelings end with an exclamation point.' },
+                { sentence: 'Please close the door<span class="gap"></span>', options: ['.', '!', '?', ','], answer: 0, explanation: 'Polite requests typically end with a period, not an exclamation point.' },
+                { sentence: 'Could you help me<span class="gap"></span>', options: ['?', '.', '!', ','], answer: 0, explanation: 'Requests phrased as questions end with a question mark.' },
+                { sentence: 'I wonder if it will rain<span class="gap"></span>', options: ['.', '?', '!', ','], answer: 0, explanation: 'Indirect questions end with a period, not a question mark.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['commas', 'apostrophes', 'quotes', 'endmarks'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            const problems = PROBLEMS[actualTopic];
+            currentProblem = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem.topic = actualTopic;
+            
+            const labels = {
+                commas: 'Commas',
+                apostrophes: 'Apostrophes',
+                quotes: 'Quotation Marks',
+                endmarks: 'End Marks'
+            };
+            
+            document.getElementById('topicLabel').textContent = labels[actualTopic];
+            document.getElementById('sentenceBox').innerHTML = currentProblem.sentence;
+            
+            renderOptions();
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function renderOptions() {
+            const grid = document.getElementById('optionsGrid');
+            // Shuffle options
+            const shuffled = [...currentProblem.options].map((opt, i) => ({ opt, isCorrect: i === currentProblem.answer }));
+            shuffled.sort(() => Math.random() - 0.5);
+            
+            grid.innerHTML = shuffled.map((item, i) => 
+                `<button class="punct-btn" data-correct="${item.isCorrect}">${item.opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.punct-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(btn.dataset.correct === 'true', btn));
+            });
+        }
+        
+        function checkAnswer(isCorrect, btn) {
+            if (answered) return;
+            answered = true;
+            
+            document.querySelectorAll('.punct-btn').forEach(b => b.disabled = true);
+            
+            if (isCorrect) {
+                btn.classList.add('correct');
+                correctCount++;
+                streak++;
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.punct-btn').forEach(b => {
+                    if (b.dataset.correct === 'true') b.classList.add('correct');
+                });
+                streak = 0;
+                
+                document.getElementById('feedback').textContent = `✗ Incorrect`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').textContent = '💡 ' + currentProblem.explanation;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('refBtn').addEventListener('click', () => {
+            document.getElementById('referenceCard').classList.toggle('visible');
+        });
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

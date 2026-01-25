@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Spelling Bee - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐝</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .difficulty-badge {
+            display: inline-block;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+        }
+        .difficulty-badge.easy { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .difficulty-badge.medium { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .difficulty-badge.hard { background: rgba(239, 68, 68, 0.2); color: var(--primary); }
+        .word-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--white);
+            margin: 20px 0;
+            letter-spacing: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .definition-box {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 450px;
+            text-align: left;
+        }
+        .definition-box .label {
+            color: var(--gray);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+        .definition-box .text {
+            color: var(--gray-light);
+            font-size: 1.1rem;
+            line-height: 1.5;
+        }
+        .audio-btn {
+            background: var(--gradient);
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.8rem;
+            cursor: pointer;
+            margin: 15px 0;
+            transition: transform 0.2s;
+        }
+        .audio-btn:hover { transform: scale(1.1); }
+        .audio-btn:active { transform: scale(0.95); }
+        .spelling-input {
+            width: 100%;
+            max-width: 350px;
+            padding: 18px 25px;
+            font-size: 1.8rem;
+            text-align: center;
+            background: var(--dark);
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: var(--white);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+        }
+        .spelling-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .spelling-input.correct { border-color: var(--success); }
+        .spelling-input.wrong { border-color: var(--primary); }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .correct-spelling {
+            font-size: 1.3rem;
+            margin-top: 10px;
+            color: var(--gray-light);
+            letter-spacing: 2px;
+        }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .letter-hints {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+        }
+        .letter-box {
+            width: 35px;
+            height: 40px;
+            background: var(--dark);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--gray);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+        .letter-box.revealed { color: var(--primary); border-color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🐝 Spelling Bee</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Words</div>
+                <div class="value" id="wordCount">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-level="easy">🟢 Easy</button>
+            <button class="topic-btn" data-level="medium">🟡 Medium</button>
+            <button class="topic-btn" data-level="hard">🔴 Hard</button>
+            <button class="topic-btn" data-level="mixed">🎲 Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="difficulty-badge easy" id="diffBadge">Easy</div>
+                
+                <button class="audio-btn" id="audioBtn" title="Hear the word">🔊</button>
+                
+                <div class="definition-box">
+                    <div class="label">Definition:</div>
+                    <div class="text" id="definition">A sweet substance produced by bees.</div>
+                </div>
+                
+                <div class="letter-hints" id="letterHints">
+                    <!-- Letter boxes -->
+                </div>
+                
+                <input type="text" class="spelling-input" id="spellingInput" placeholder="Type the word..." autofocus autocomplete="off" autocapitalize="off">
+                
+                <div class="feedback" id="feedback"></div>
+                <div class="correct-spelling" id="correctSpelling"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Reveal Letter</button>
+            <button class="btn btn-secondary" id="skipBtn">⏭️ Skip</button>
+            <button class="btn btn-primary" id="checkBtn">Check Spelling</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Read the definition and listen to the pronunciation</li>
+                <li>Type the correct spelling of the word</li>
+                <li>Use hints sparingly - they reduce points!</li>
+                <li>Build streaks for bonus points</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'spelling';
+        
+        let score = 0;
+        let wordCount = 0;
+        let streak = 0;
+        let level = 'easy';
+        let currentWord = null;
+        let hintsUsed = 0;
+        let revealedLetters = [];
+        
+        const WORDS = {
+            easy: [
+                { word: 'believe', definition: 'To accept something as true or real.' },
+                { word: 'friend', definition: 'A person you like and enjoy spending time with.' },
+                { word: 'people', definition: 'Human beings in general.' },
+                { word: 'because', definition: 'For the reason that.' },
+                { word: 'thought', definition: 'An idea or opinion produced by thinking.' },
+                { word: 'through', definition: 'Moving in one side and out of the other.' },
+                { word: 'different', definition: 'Not the same as another.' },
+                { word: 'important', definition: 'Of great significance or value.' },
+                { word: 'something', definition: 'An unspecified thing.' },
+                { word: 'beautiful', definition: 'Pleasing to the senses or mind.' },
+                { word: 'knowledge', definition: 'Facts or information acquired through experience.' },
+                { word: 'together', definition: 'With or in proximity to another person.' },
+                { word: 'remember', definition: 'To recall information from memory.' },
+                { word: 'probably', definition: 'Almost certainly; as far as one knows.' },
+                { word: 'favorite', definition: 'Preferred above all others of the same kind.' }
+            ],
+            medium: [
+                { word: 'accommodate', definition: 'To provide lodging or make room for.' },
+                { word: 'occurrence', definition: 'An incident or event.' },
+                { word: 'embarrass', definition: 'To cause someone to feel awkward or ashamed.' },
+                { word: 'necessary', definition: 'Required to be done; essential.' },
+                { word: 'possession', definition: 'The state of having or owning something.' },
+                { word: 'recommend', definition: 'To suggest as being good or suitable.' },
+                { word: 'separate', definition: 'To divide or set apart from others.' },
+                { word: 'definitely', definition: 'Without doubt; certainly.' },
+                { word: 'government', definition: 'The governing body of a nation or state.' },
+                { word: 'environment', definition: 'The surroundings or conditions one lives in.' },
+                { word: 'experience', definition: 'Practical contact with and observation of facts.' },
+                { word: 'immediately', definition: 'At once; instantly.' },
+                { word: 'intelligence', definition: 'The ability to acquire and apply knowledge.' },
+                { word: 'opportunity', definition: 'A favorable time or set of circumstances.' },
+                { word: 'temperature', definition: 'The degree of heat or cold.' }
+            ],
+            hard: [
+                { word: 'conscientious', definition: 'Wishing to do what is right; thorough.' },
+                { word: 'acquaintance', definition: 'A person one knows slightly.' },
+                { word: 'bureaucracy', definition: 'A system of government with many departments.' },
+                { word: 'mischievous', definition: 'Causing or showing a fondness for mischief.' },
+                { word: 'Mediterranean', definition: 'Relating to the sea between Europe and Africa.' },
+                { word: 'questionnaire', definition: 'A set of printed questions for a survey.' },
+                { word: 'surveillance', definition: 'Close observation of a person or group.' },
+                { word: 'entrepreneur', definition: 'A person who starts and runs a business.' },
+                { word: 'maintenance', definition: 'The process of preserving a condition.' },
+                { word: 'perseverance', definition: 'Persistence in doing something despite difficulty.' },
+                { word: 'acknowledgement', definition: 'Acceptance of the truth or existence of something.' },
+                { word: 'pronunciation', definition: 'The way in which a word is spoken.' },
+                { word: 'miscellaneous', definition: 'Consisting of various types mixed together.' },
+                { word: 'exaggerate', definition: 'To represent as greater than it really is.' },
+                { word: 'occasionally', definition: 'At infrequent intervals; sometimes.' }
+            ]
+        };
+        
+        function generateWord() {
+            hintsUsed = 0;
+            revealedLetters = [];
+            
+            let actualLevel = level;
+            if (level === 'mixed') {
+                const levels = ['easy', 'medium', 'hard'];
+                actualLevel = levels[Math.floor(Math.random() * levels.length)];
+            }
+            
+            const words = WORDS[actualLevel];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            currentWord.level = actualLevel;
+            
+            // Update UI
+            const badge = document.getElementById('diffBadge');
+            badge.textContent = actualLevel.charAt(0).toUpperCase() + actualLevel.slice(1);
+            badge.className = 'difficulty-badge ' + actualLevel;
+            
+            document.getElementById('definition').textContent = currentWord.definition;
+            
+            // Create letter boxes
+            renderLetterHints();
+            
+            document.getElementById('spellingInput').value = '';
+            document.getElementById('spellingInput').className = 'spelling-input';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('correctSpelling').textContent = '';
+            document.getElementById('spellingInput').focus();
+        }
+        
+        function renderLetterHints() {
+            const container = document.getElementById('letterHints');
+            container.innerHTML = currentWord.word.split('').map((letter, i) => {
+                const revealed = revealedLetters.includes(i);
+                return `<div class="letter-box ${revealed ? 'revealed' : ''}">${revealed ? letter.toUpperCase() : '_'}</div>`;
+            }).join('');
+        }
+        
+        function speakWord() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(currentWord.word);
+                utterance.rate = 0.8;
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        function revealLetter() {
+            if (revealedLetters.length >= currentWord.word.length - 1) return;
+            
+            // Find an unrevealed position
+            const unrevealed = [];
+            for (let i = 0; i < currentWord.word.length; i++) {
+                if (!revealedLetters.includes(i)) unrevealed.push(i);
+            }
+            
+            if (unrevealed.length > 0) {
+                const idx = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+                revealedLetters.push(idx);
+                hintsUsed++;
+                renderLetterHints();
+            }
+        }
+        
+        function checkSpelling() {
+            const input = document.getElementById('spellingInput');
+            const userAnswer = input.value.trim().toLowerCase();
+            
+            if (!userAnswer) return;
+            
+            const correct = userAnswer === currentWord.word.toLowerCase();
+            
+            if (correct) {
+                wordCount++;
+                streak++;
+                
+                // Points based on difficulty and hints
+                const basePoints = { easy: 100, medium: 150, hard: 200 }[currentWord.level];
+                const hintPenalty = hintsUsed * 20;
+                const streakBonus = Math.min(streak, 10) * 10;
+                const points = Math.max(basePoints - hintPenalty + streakBonus, 50);
+                score += points;
+                
+                input.classList.add('correct');
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateWord, 1500);
+            } else {
+                streak = 0;
+                input.classList.add('wrong');
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                document.getElementById('correctSpelling').textContent = `Correct: ${currentWord.word}`;
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateWord, 2500);
+            }
+            
+            updateUI();
+        }
+        
+        function skipWord() {
+            streak = 0;
+            document.getElementById('correctSpelling').textContent = `Skipped: ${currentWord.word}`;
+            updateUI();
+            setTimeout(generateWord, 1500);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('wordCount').textContent = wordCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('audioBtn').addEventListener('click', speakWord);
+        document.getElementById('hintBtn').addEventListener('click', revealLetter);
+        document.getElementById('skipBtn').addEventListener('click', skipWord);
+        document.getElementById('checkBtn').addEventListener('click', checkSpelling);
+        
+        document.getElementById('spellingInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkSpelling();
+        });
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                level = btn.dataset.level;
+                score = 0; wordCount = 0; streak = 0;
+                updateUI();
+                generateWord();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateWord();
+    </script>
+</body>
+</html>

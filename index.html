@@ -217,7 +217,7 @@
 
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="number">25</div>
+                <div class="number">35</div>
                 <div class="label">Games Available</div>
             </div>
             <div class="stat-item">
@@ -238,6 +238,7 @@
             <button class="filter-btn" data-cat="word">📝 Word</button>
             <button class="filter-btn" data-cat="strategy">🚀 Strategy</button>
             <button class="filter-btn" data-cat="math">📐 Math</button>
+                <button class="filter-btn" data-cat="english">📖 English</button>
         </div>
 
         <div class="games-grid" id="gamesGrid">
@@ -299,6 +300,16 @@
             { id: 'mathspeed', name: 'Math Speed', icon: '⚡', desc: 'Race against the clock! Quick arithmetic challenges.', tags: ['math', 'speed'], cat: 'math' },
             { id: 'geometry', name: 'Geometry Pro', icon: '📏', desc: 'Calculate areas, perimeters, volumes, and angles.', tags: ['math', 'geometry'], cat: 'math' },
             { id: 'fractions', name: 'Fraction Frenzy', icon: '🥧', desc: 'Add, subtract, multiply, divide and simplify fractions.', tags: ['math', 'fractions'], cat: 'math' },
+            { id: 'statistics', name: 'Statistics Lab', icon: '📊', desc: 'Mean, median, mode, range, and probability.', tags: ['math', 'statistics'], cat: 'math' },
+            { id: 'prealgebra', name: 'Pre-Algebra Pro', icon: '🔢', desc: 'PEMDAS, exponents, roots, negatives, absolute value.', tags: ['math', 'prealgebra'], cat: 'math' },
+            { id: 'numbertheory', name: 'Number Theory', icon: '🔍', desc: 'Primes, factors, GCD, LCM, and divisibility.', tags: ['math', 'numbers'], cat: 'math' },
+            { id: 'matrices', name: 'Matrix Math', icon: '🔲', desc: 'Matrix operations, vectors, and determinants.', tags: ['math', 'linear algebra'], cat: 'math' },
+            { id: 'wordproblems', name: 'Word Problems', icon: '📝', desc: 'Real-world math: money, distance, percent, ratios.', tags: ['math', 'applied'], cat: 'math' },
+            { id: 'mathfacts', name: 'Math Facts Drill', icon: '✖️', desc: 'Master multiplication tables with timed drills.', tags: ['math', 'times tables'], cat: 'math' },
+            { id: 'grammar', name: 'Grammar Galaxy', icon: '📖', desc: 'Parts of speech, subject-verb agreement, and more.', tags: ['english', 'grammar'], cat: 'english' },
+            { id: 'spelling', name: 'Spelling Bee', icon: '🐝', desc: 'Spell words correctly with audio hints.', tags: ['english', 'spelling'], cat: 'english' },
+            { id: 'punctuation', name: 'Punctuation Pro', icon: '✏️', desc: 'Master commas, apostrophes, and quotation marks.', tags: ['english', 'punctuation'], cat: 'english' },
+            { id: 'literature', name: 'Literary Legends', icon: '📚', desc: 'Literary devices, famous authors, genres, and terms.', tags: ['english', 'literature'], cat: 'english' },
         ];
 
         function renderGames(filter = 'all') {

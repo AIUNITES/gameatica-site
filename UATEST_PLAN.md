@@ -43,6 +43,12 @@
 | Math Speed | games/mathspeed.html | Timed arithmetic | ✅ |
 | Geometry Pro | games/geometry.html | Areas/volumes/angles | ✅ |
 | Fraction Frenzy | games/fractions.html | Fraction operations | ✅ |
+| Statistics Lab | games/statistics.html | Mean/median/mode/probability | ✅ |
+| Pre-Algebra Pro | games/prealgebra.html | PEMDAS/exponents/roots | ✅ |
+| Number Theory | games/numbertheory.html | Primes/factors/GCD/LCM | ✅ |
+| Matrix Math | games/matrices.html | Matrices and vectors | ✅ |
+| Word Problems | games/wordproblems.html | Real-world math problems | ✅ |
+| Math Facts Drill | games/mathfacts.html | Multiplication mastery | ✅ |
 
 ---
 
@@ -51,7 +57,7 @@
 ### 🎮 Arcade Hub (index.html)
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Game grid display | ✅ | 25 games with icons |
+| Game grid display | ✅ | 31 games with icons |
 | Category filters | ✅ | All/Arcade/Puzzle/Skill/Word/Strategy/Math |
 | Player name system | ✅ | Stored in localStorage |
 | Play count stats | ✅ | Tracks total plays |
@@ -290,6 +296,73 @@
 | Distributive property | ✅ |
 | Variables on both sides | ✅ |
 | Hint system | ✅ |
+
+### 📊 Statistics Lab
+| Feature | Status |
+|---------|--------|
+| Mean calculations | ✅ |
+| Median calculations | ✅ |
+| Mode identification | ✅ |
+| Range calculations | ✅ |
+| Probability problems | ✅ |
+| Visual data bars | ✅ |
+| Formula reference | ✅ |
+
+### 🔢 Pre-Algebra Pro
+| Feature | Status |
+|---------|--------|
+| PEMDAS order of operations | ✅ |
+| Exponents | ✅ |
+| Square and cube roots | ✅ |
+| Negative number operations | ✅ |
+| Absolute value | ✅ |
+| PEMDAS guide | ✅ |
+| Hint system | ✅ |
+
+### 🔍 Number Theory
+| Feature | Status |
+|---------|--------|
+| Prime number identification | ✅ |
+| Factor finding | ✅ |
+| GCD calculations | ✅ |
+| LCM calculations | ✅ |
+| Divisibility tests | ✅ |
+| Yes/No answer mode | ✅ |
+| Factor visualization | ✅ |
+
+### 🔲 Matrix Math
+| Feature | Status |
+|---------|--------|
+| 2x2 matrix addition | ✅ |
+| Scalar multiplication | ✅ |
+| Vector addition/subtraction | ✅ |
+| 2x2 determinants | ✅ |
+| Visual matrix display | ✅ |
+| Reference card | ✅ |
+
+### 📝 Word Problems
+| Feature | Status |
+|---------|--------|
+| Money problems | ✅ |
+| Distance/speed/time | ✅ |
+| Percent calculations | ✅ |
+| Ratio problems | ✅ |
+| Age problems | ✅ |
+| 10 problems per round | ✅ |
+| Progress dots | ✅ |
+| Show work/explanation | ✅ |
+
+### ✖️ Math Facts Drill
+| Feature | Status |
+|---------|--------|
+| Selectable times tables (2-12) | ✅ |
+| Timed mode (60s) | ✅ |
+| Practice mode (untimed) | ✅ |
+| Challenge mode (all tables) | ✅ |
+| Mastery tracking per fact | ✅ |
+| Mastery grid visualization | ✅ |
+| Speed and accuracy stats | ✅ |
+| Auto-submit on correct | ✅ |
 | Streak bonus | ✅ |
 
 ### ∫ Calculus Challenge
@@ -367,7 +440,7 @@
 ## Test Scenarios
 
 ### Hub Tests
-- [ ] All 25 game cards display correctly
+- [ ] All 31 game cards display correctly
 - [ ] Category filter buttons work
 - [ ] Player name changes and persists
 - [ ] Play count updates after playing games
@@ -428,6 +501,7 @@
 | 2.0.0 | Jan 25, 2026 | Full arcade with 18 games |
 | 2.1.0 | Jan 25, 2026 | Added Star Trader (19 games total) |
 | 2.2.0 | Jan 25, 2026 | Added 6 Math Learning Games (25 games total) |
+| 2.3.0 | Jan 25, 2026 | Added 6 more Math Games (31 games total) |
 
 ---
 

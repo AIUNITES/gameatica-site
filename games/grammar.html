@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Grammar Galaxy - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .sentence-box {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px auto;
+            max-width: 550px;
+            font-size: 1.3rem;
+            line-height: 1.8;
+            text-align: left;
+            border-left: 4px solid var(--primary);
+        }
+        .sentence-box .highlight {
+            background: rgba(239, 68, 68, 0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .sentence-box .blank {
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 3px solid var(--primary);
+            margin: 0 5px;
+        }
+        .question-text {
+            font-size: 1.1rem;
+            color: var(--gray-light);
+            margin: 20px 0;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .option-btn {
+            padding: 15px 20px;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--white);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            color: var(--gray-light);
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+        }
+        .explanation.visible { display: block; }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📖 Grammar Galaxy</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="parts">Parts of Speech</button>
+            <button class="topic-btn" data-topic="agreement">Agreement</button>
+            <button class="topic-btn" data-topic="tense">Verb Tense</button>
+            <button class="topic-btn" data-topic="sentences">Sentences</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Parts of Speech</div>
+                <div class="sentence-box" id="sentenceBox">
+                    The <span class="highlight">quick</span> fox jumped over the lazy dog.
+                </div>
+                <div class="question-text" id="question">What part of speech is the highlighted word?</div>
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options rendered by JS -->
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Parts of Speech:</strong> Nouns, verbs, adjectives, adverbs, etc.</li>
+                <li><strong>Agreement:</strong> Subject-verb and pronoun-antecedent</li>
+                <li><strong>Verb Tense:</strong> Past, present, future, perfect</li>
+                <li><strong>Sentences:</strong> Types, fragments, run-ons</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'grammar';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let topic = 'parts';
+        let currentProblem = null;
+        let answered = false;
+        
+        const PROBLEMS = {
+            parts: [
+                { sentence: 'The <span class="highlight">beautiful</span> sunset painted the sky.', question: 'What part of speech is "beautiful"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 0, explanation: 'Beautiful is an adjective - it describes the noun "sunset".' },
+                { sentence: 'She <span class="highlight">quickly</span> finished her homework.', question: 'What part of speech is "quickly"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 1, explanation: 'Quickly is an adverb - it describes how she finished (the verb).' },
+                { sentence: 'The <span class="highlight">dog</span> chased its tail.', question: 'What part of speech is "dog"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 2, explanation: 'Dog is a noun - it names a thing (animal).' },
+                { sentence: 'They <span class="highlight">danced</span> all night long.', question: 'What part of speech is "danced"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 3, explanation: 'Danced is a verb - it shows the action performed.' },
+                { sentence: '<span class="highlight">Wow</span>, that was amazing!', question: 'What part of speech is "Wow"?', options: ['Interjection', 'Adverb', 'Conjunction', 'Preposition'], answer: 0, explanation: 'Wow is an interjection - it expresses strong emotion.' },
+                { sentence: 'The cat sat <span class="highlight">on</span> the mat.', question: 'What part of speech is "on"?', options: ['Adverb', 'Conjunction', 'Preposition', 'Pronoun'], answer: 2, explanation: 'On is a preposition - it shows the relationship between "cat" and "mat".' },
+                { sentence: 'I wanted to go, <span class="highlight">but</span> it rained.', question: 'What part of speech is "but"?', options: ['Preposition', 'Conjunction', 'Adverb', 'Pronoun'], answer: 1, explanation: 'But is a conjunction - it connects two clauses.' },
+                { sentence: '<span class="highlight">She</span> gave the book to him.', question: 'What part of speech is "She"?', options: ['Noun', 'Adjective', 'Pronoun', 'Verb'], answer: 2, explanation: 'She is a pronoun - it replaces a noun (a person\'s name).' },
+                { sentence: 'The movie was <span class="highlight">extremely</span> boring.', question: 'What part of speech is "extremely"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 1, explanation: 'Extremely is an adverb - it modifies the adjective "boring".' },
+                { sentence: 'We need <span class="highlight">happiness</span> in our lives.', question: 'What part of speech is "happiness"?', options: ['Adjective', 'Adverb', 'Noun', 'Verb'], answer: 2, explanation: 'Happiness is a noun - it names an abstract concept.' }
+            ],
+            agreement: [
+                { sentence: 'The team <span class="blank"></span> winning the game.', question: 'Choose the correct verb:', options: ['is', 'are', 'were', 'be'], answer: 0, explanation: 'Team is a collective noun treated as singular, so "is" is correct.' },
+                { sentence: 'Neither the cats nor the dog <span class="blank"></span> hungry.', question: 'Choose the correct verb:', options: ['are', 'is', 'were', 'be'], answer: 1, explanation: 'With "neither...nor", the verb agrees with the nearer subject (dog = singular).' },
+                { sentence: 'Everyone <span class="blank"></span> their homework.', question: 'Choose the correct verb:', options: ['finish', 'finishes', 'finishing', 'have finished'], answer: 1, explanation: 'Everyone is singular and requires "finishes".' },
+                { sentence: 'The news <span class="blank"></span> shocking.', question: 'Choose the correct verb:', options: ['are', 'is', 'were', 'have been'], answer: 1, explanation: 'News is an uncountable noun treated as singular.' },
+                { sentence: 'Each of the students <span class="blank"></span> a pencil.', question: 'Choose the correct verb:', options: ['have', 'has', 'having', 'are having'], answer: 1, explanation: '"Each" is singular, so it takes "has".' },
+                { sentence: 'The committee <span class="blank"></span> reached a decision.', question: 'Choose the correct verb:', options: ['have', 'has', 'are', 'were'], answer: 1, explanation: 'Committee is collective and singular here, taking "has".' },
+                { sentence: 'Either the teacher or the students <span class="blank"></span> responsible.', question: 'Choose the correct verb:', options: ['is', 'are', 'was', 'has been'], answer: 1, explanation: 'With "either...or", verb agrees with nearer subject (students = plural).' },
+                { sentence: 'Mathematics <span class="blank"></span> my favorite subject.', question: 'Choose the correct verb:', options: ['are', 'is', 'were', 'have been'], answer: 1, explanation: 'Mathematics, despite the -s, is treated as singular.' }
+            ],
+            tense: [
+                { sentence: 'By next year, I <span class="blank"></span> graduated.', question: 'Choose the correct tense:', options: ['will have', 'would have', 'had', 'have'], answer: 0, explanation: 'Future perfect tense: "will have + past participle" for completed future actions.' },
+                { sentence: 'She <span class="blank"></span> dinner when I arrived.', question: 'Choose the correct tense:', options: ['cooked', 'was cooking', 'cooks', 'has cooked'], answer: 1, explanation: 'Past continuous: action in progress when another past action occurred.' },
+                { sentence: 'I <span class="blank"></span> to Paris three times.', question: 'Choose the correct tense:', options: ['went', 'have been', 'go', 'was going'], answer: 1, explanation: 'Present perfect: experience up to now (unspecified past time).' },
+                { sentence: 'By the time you arrive, we <span class="blank"></span> already left.', question: 'Choose the correct tense:', options: ['will', 'will have', 'would', 'had'], answer: 1, explanation: 'Future perfect: completed action before a future time.' },
+                { sentence: 'She <span class="blank"></span> her homework before the show started.', question: 'Choose the correct tense:', options: ['finished', 'had finished', 'has finished', 'finishes'], answer: 1, explanation: 'Past perfect: action completed before another past action.' },
+                { sentence: 'Right now, they <span class="blank"></span> a movie.', question: 'Choose the correct tense:', options: ['watch', 'are watching', 'watched', 'have watched'], answer: 1, explanation: 'Present continuous: action happening right now.' },
+                { sentence: 'Every day, she <span class="blank"></span> to work.', question: 'Choose the correct tense:', options: ['walks', 'is walking', 'walked', 'has walked'], answer: 0, explanation: 'Simple present: habitual action (every day).' }
+            ],
+            sentences: [
+                { sentence: 'Running through the park on a sunny day.', question: 'What type of sentence error is this?', options: ['Fragment', 'Run-on', 'Comma splice', 'No error'], answer: 0, explanation: 'This is a fragment - it has no main subject and verb.' },
+                { sentence: 'I love pizza it is my favorite food.', question: 'What type of sentence error is this?', options: ['Fragment', 'Run-on', 'Dangling modifier', 'No error'], answer: 1, explanation: 'This is a run-on - two independent clauses with no punctuation.' },
+                { sentence: 'I went to the store, I bought some milk.', question: 'What type of sentence error is this?', options: ['Fragment', 'Run-on', 'Comma splice', 'No error'], answer: 2, explanation: 'This is a comma splice - two independent clauses joined only by a comma.' },
+                { sentence: 'Although she was tired, she finished her work.', question: 'What type of sentence is this?', options: ['Simple', 'Compound', 'Complex', 'Compound-complex'], answer: 2, explanation: 'Complex sentence: independent clause + dependent clause.' },
+                { sentence: 'I studied hard, and I passed the test.', question: 'What type of sentence is this?', options: ['Simple', 'Compound', 'Complex', 'Compound-complex'], answer: 1, explanation: 'Compound sentence: two independent clauses joined by "and".' },
+                { sentence: 'The dog barked.', question: 'What type of sentence is this?', options: ['Simple', 'Compound', 'Complex', 'Compound-complex'], answer: 0, explanation: 'Simple sentence: one independent clause.' },
+                { sentence: 'Because it rained, we stayed inside, and we watched a movie.', question: 'What type of sentence is this?', options: ['Simple', 'Compound', 'Complex', 'Compound-complex'], answer: 3, explanation: 'Compound-complex: dependent clause + two independent clauses.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['parts', 'agreement', 'tense', 'sentences'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            const problems = PROBLEMS[actualTopic];
+            currentProblem = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem.topic = actualTopic;
+            
+            const labels = {
+                parts: 'Parts of Speech',
+                agreement: 'Subject-Verb Agreement',
+                tense: 'Verb Tense',
+                sentences: 'Sentence Types'
+            };
+            
+            document.getElementById('topicLabel').textContent = labels[actualTopic];
+            document.getElementById('sentenceBox').innerHTML = currentProblem.sentence;
+            document.getElementById('question').textContent = currentProblem.question;
+            
+            renderOptions();
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function renderOptions() {
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = currentProblem.options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.answer) {
+                btn.classList.add('correct');
+                correctCount++;
+                streak++;
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn').forEach(b => {
+                    if (parseInt(b.dataset.index) === currentProblem.answer) b.classList.add('correct');
+                });
+                streak = 0;
+                
+                document.getElementById('feedback').textContent = `✗ Incorrect`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').textContent = '💡 ' + currentProblem.explanation;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            // Give a subtle hint
+            const hints = {
+                parts: 'Think about what the word DOES in the sentence.',
+                agreement: 'Find the subject and check if it\'s singular or plural.',
+                tense: 'Look for time clues in the sentence.',
+                sentences: 'Count the independent clauses.'
+            };
+            document.getElementById('feedback').textContent = '💡 ' + hints[currentProblem.topic];
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>
