@@ -217,7 +217,7 @@
 
         <div class="stats-bar">
             <div class="stat-item">
-                <div class="number">18</div>
+                <div class="number">19</div>
                 <div class="label">Games Available</div>
             </div>
             <div class="stat-item">
@@ -236,6 +236,7 @@
             <button class="filter-btn" data-cat="puzzle">🧩 Puzzle</button>
             <button class="filter-btn" data-cat="skill">⚡ Skill</button>
             <button class="filter-btn" data-cat="word">📝 Word</button>
+            <button class="filter-btn" data-cat="strategy">🚀 Strategy</button>
         </div>
 
         <div class="games-grid" id="gamesGrid">
@@ -286,6 +287,9 @@
             { id: 'trivia', name: 'Trivia Quiz', icon: '❓', desc: 'Test your knowledge across multiple categories.', tags: ['word', 'quiz'], cat: 'word' },
             { id: 'wordguess', name: 'Word Guess', icon: '📝', desc: 'Guess the 5-letter word in 6 tries. Daily challenge!', tags: ['word', 'puzzle'], cat: 'word' },
             { id: 'blackjack', name: 'Blackjack', icon: '🃏', desc: 'Try to beat the dealer! Get 21 without going over.', tags: ['card', 'casino'], cat: 'word' },
+            
+            // Strategy & Simulation
+            { id: 'startrader', name: 'Star Trader', icon: '🚀', desc: 'Trade goods across the galaxy. Buy low, sell high, upgrade your ship!', tags: ['strategy', 'space'], cat: 'strategy' },
         ];
 
         function renderGames(filter = 'all') {

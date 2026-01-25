@@ -36,6 +36,7 @@
 | Match 3 | games/match3.html | Gem matching | ✅ |
 | Sliding Puzzle | games/sliding.html | Tile slider | ✅ |
 | Sudoku | games/sudoku.html | Number logic puzzle | ✅ |
+| Star Trader | games/startrader.html | Space trading/exploration | ✅ |
 
 ---
 

@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Star Trader - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <style>
+        :root {
+            --space-dark: #05050a;
+            --space-blue: #0a0a18;
+            --panel-bg: rgba(10,15,30,0.95);
+            --neon-blue: #00d4ff;
+            --neon-purple: #b347d9;
+            --neon-green: #00ff88;
+            --neon-orange: #ff6b35;
+            --neon-red: #ff3366;
+            --neon-yellow: #ffdd00;
+            --neon-cyan: #00ffff;
+        }
+        
+        * { box-sizing: border-box; }
+        
+        body {
+            background: var(--space-dark);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .game-container {
+            max-width: 1400px;
+            padding: 10px;
+        }
+        
+        h1, h2, h3, .stat-value, .credit-display, .panel-title {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* Top HUD */
+        .hud-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(180deg, rgba(0,20,40,0.9), rgba(0,10,20,0.7));
+            border: 1px solid rgba(0,212,255,0.2);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .hud-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .hud-item {
+            text-align: center;
+        }
+        
+        .hud-label {
+            font-size: 0.7rem;
+            color: #556;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .hud-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+        }
+        
+        .hud-value.credits { color: var(--neon-green); text-shadow: 0 0 10px rgba(0,255,136,0.5); }
+        .hud-value.fuel { color: var(--neon-orange); }
+        .hud-value.hull { color: var(--neon-red); }
+        .hud-value.cargo { color: var(--neon-cyan); }
+        .hud-value.day { color: var(--neon-purple); }
+        
+        .mini-bar {
+            width: 80px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            margin-top: 4px;
+        }
+        
+        .mini-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        
+        .mini-bar-fill.fuel { background: var(--neon-orange); }
+        .mini-bar-fill.hull { background: var(--neon-red); }
+        .mini-bar-fill.cargo { background: var(--neon-cyan); }
+        
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 15px;
+            min-height: 600px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-layout { grid-template-columns: 1fr; }
+        }
+        
+        /* Galaxy Map */
+        .galaxy-container {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .galaxy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(0,212,255,0.1);
+        }
+        
+        .galaxy-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .galaxy-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .galaxy-btn {
+            padding: 6px 12px;
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            border-radius: 5px;
+            color: var(--neon-blue);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .galaxy-btn:hover { background: rgba(0,212,255,0.2); }
+        .galaxy-btn.active { background: rgba(0,212,255,0.3); border-color: var(--neon-blue); }
+        
+        #galaxyCanvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+            background: radial-gradient(ellipse at 30% 40%, rgba(100,50,150,0.1) 0%, transparent 50%),
+                        radial-gradient(ellipse at 70% 60%, rgba(50,100,150,0.1) 0%, transparent 50%),
+                        var(--space-dark);
+        }
+        
+        /* System Info Tooltip */
+        .system-tooltip {
+            position: absolute;
+            background: rgba(5,10,20,0.95);
+            border: 1px solid var(--neon-blue);
+            border-radius: 8px;
+            padding: 12px;
+            min-width: 200px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+        
+        .system-tooltip.visible { opacity: 1; }
+        
+        .system-tooltip h4 {
+            font-family: 'Orbitron', sans-serif;
+            color: #fff;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .system-tooltip .type {
+            font-size: 0.7rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+        }
+        
+        .system-tooltip .info {
+            font-size: 0.8rem;
+            color: #889;
+            margin-top: 8px;
+        }
+        
+        .system-tooltip .prices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+        
+        .price-tag {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.7rem;
+        }
+        
+        .price-tag.cheap { background: rgba(0,255,136,0.2); color: var(--neon-green); }
+        .price-tag.expensive { background: rgba(255,51,102,0.2); color: var(--neon-red); }
+        
+        /* Right Panel */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0,212,255,0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(0,212,255,0.1);
+        }
+        
+        .panel-title {
+            font-size: 0.75rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .panel-content {
+            padding: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        /* Location Actions */
+        .location-banner {
+            background: linear-gradient(135deg, rgba(0,50,100,0.3), rgba(50,0,100,0.3));
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0,212,255,0.1);
+        }
+        
+        .location-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .location-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #fff;
+        }
+        
+        .location-type {
+            font-size: 0.75rem;
+            color: var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            padding: 12px;
+        }
+        
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 12px 8px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #aaa;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: rgba(0,212,255,0.1);
+            border-color: var(--neon-blue);
+            color: #fff;
+        }
+        
+        .action-btn .icon { font-size: 1.3rem; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            padding: 20px;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal {
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-blue);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(0,212,255,0.2);
+        }
+        
+        .modal-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-blue);
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        .modal-close:hover { color: #fff; }
+        
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        /* Market */
+        .market-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .market-item:hover {
+            background: rgba(0,212,255,0.05);
+            border-color: rgba(0,212,255,0.2);
+        }
+        
+        .market-item-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .market-item-icon {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+            font-size: 1.2rem;
+        }
+        
+        .market-item-name { font-weight: 500; }
+        .market-item-owned { font-size: 0.75rem; color: #666; }
+        
+        .market-item-price {
+            font-family: 'Orbitron', sans-serif;
+            margin-right: 15px;
+        }
+        
+        .market-item-price.low { color: var(--neon-green); }
+        .market-item-price.high { color: var(--neon-red); }
+        .market-item-price.normal { color: var(--neon-yellow); }
+        
+        .market-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .qty-btn:hover { background: rgba(255,255,255,0.1); }
+        .qty-btn.buy:hover { border-color: var(--neon-green); color: var(--neon-green); }
+        .qty-btn.sell:hover { border-color: var(--neon-red); color: var(--neon-red); }
+        .qty-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        
+        /* Shipyard */
+        .upgrade-card {
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+        
+        .upgrade-card:hover {
+            border-color: var(--neon-purple);
+        }
+        
+        .upgrade-card.owned {
+            border-color: var(--neon-green);
+            background: rgba(0,255,136,0.05);
+        }
+        
+        .upgrade-card.locked {
+            opacity: 0.5;
+        }
+        
+        .upgrade-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        
+        .upgrade-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .upgrade-title .icon { font-size: 1.3rem; }
+        .upgrade-title .name { font-weight: 600; }
+        
+        .upgrade-price {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-yellow);
+            font-size: 0.9rem;
+        }
+        
+        .upgrade-desc {
+            font-size: 0.8rem;
+            color: #778;
+            margin-bottom: 10px;
+        }
+        
+        .upgrade-btn {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--neon-purple);
+            background: rgba(179,71,217,0.1);
+            border-radius: 6px;
+            color: var(--neon-purple);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upgrade-btn:hover { background: rgba(179,71,217,0.2); }
+        .upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        /* Travel */
+        .destination-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .destination-item:hover {
+            background: rgba(0,212,255,0.08);
+            border-color: rgba(0,212,255,0.3);
+        }
+        
+        .destination-item.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .destination-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .destination-icon {
+            font-size: 1.5rem;
+        }
+        
+        .destination-name { font-weight: 500; }
+        .destination-type { font-size: 0.75rem; color: #667; }
+        
+        .destination-cost {
+            text-align: right;
+        }
+        
+        .destination-fuel {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-orange);
+            font-size: 0.9rem;
+        }
+        
+        .destination-dist {
+            font-size: 0.75rem;
+            color: #556;
+        }
+        
+        /* Ship Log */
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.8rem;
+        }
+        
+        .log-entry:last-child { border-bottom: none; }
+        
+        .log-entry .time {
+            color: #445;
+            font-size: 0.7rem;
+        }
+        
+        .log-entry.profit { color: var(--neon-green); }
+        .log-entry.loss { color: var(--neon-red); }
+        .log-entry.info { color: var(--neon-blue); }
+        .log-entry.warning { color: var(--neon-orange); }
+        .log-entry.discovery { color: var(--neon-purple); }
+        
+        /* Cargo */
+        .cargo-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .cargo-item:last-child { border-bottom: none; }
+        
+        .cargo-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .cargo-qty {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+        }
+        
+        /* Travel Animation */
+        .travel-overlay {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .travel-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .travel-stars {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+        }
+        
+        .star-line {
+            position: absolute;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, #fff, transparent);
+            animation: starStreak 0.5s linear infinite;
+        }
+        
+        @keyframes starStreak {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+        
+        .travel-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+        
+        .travel-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: var(--neon-blue);
+            margin-bottom: 20px;
+        }
+        
+        .travel-progress {
+            width: 250px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .travel-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            width: 0%;
+            transition: width 1.5s linear;
+        }
+        
+        /* Event Modal */
+        .event-content {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .event-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        
+        .event-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .event-desc {
+            color: #889;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .event-result {
+            padding: 10px 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .event-btn {
+            padding: 12px 30px;
+            background: var(--neon-blue);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .event-btn:hover { transform: scale(1.05); }
+        
+        /* Combat */
+        .combat-display {
+            text-align: center;
+        }
+        
+        .combat-ships {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .combat-ship {
+            text-align: center;
+        }
+        
+        .combat-ship .icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+        
+        .combat-ship .name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .combat-hp {
+            width: 100px;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+        
+        .combat-hp-fill {
+            height: 100%;
+            background: var(--neon-green);
+            transition: width 0.3s;
+        }
+        
+        .combat-hp-fill.low { background: var(--neon-red); }
+        
+        .combat-vs {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            color: var(--neon-red);
+        }
+        
+        .combat-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .combat-btn {
+            padding: 12px 25px;
+            border: 1px solid;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .combat-btn.attack {
+            background: rgba(255,51,102,0.2);
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+        }
+        
+        .combat-btn.flee {
+            background: rgba(255,107,53,0.2);
+            border-color: var(--neon-orange);
+            color: var(--neon-orange);
+        }
+        
+        .combat-btn:hover { transform: scale(1.05); }
+        
+        .combat-log {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #889;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hud-section { flex-wrap: wrap; }
+            .action-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        
+        @media (max-width: 500px) {
+            .action-grid { grid-template-columns: repeat(2, 1fr); }
+            .hud-item { min-width: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Arcade</a>
+            <h1>🚀 Star Trader</h1>
+        </div>
+        
+        <!-- HUD Bar -->
+        <div class="hud-bar">
+            <div class="hud-section">
+                <div class="hud-item">
+                    <div class="hud-label">Credits</div>
+                    <div class="hud-value credits" id="hudCredits">10,000</div>
+                </div>
+                <div class="hud-item">
+                    <div class="hud-label">Day</div>
+                    <div class="hud-value day" id="hudDay">1</div>
+                </div>
+            </div>
+            <div class="hud-section">
+                <div class="hud-item">
+                    <div class="hud-label">Fuel</div>
+                    <div class="hud-value fuel" id="hudFuel">100/100</div>
+                    <div class="mini-bar"><div class="mini-bar-fill fuel" id="fuelBar"></div></div>
+                </div>
+                <div class="hud-item">
+                    <div class="hud-label">Hull</div>
+                    <div class="hud-value hull" id="hudHull">100/100</div>
+                    <div class="mini-bar"><div class="mini-bar-fill hull" id="hullBar"></div></div>
+                </div>
+                <div class="hud-item">
+                    <div class="hud-label">Cargo</div>
+                    <div class="hud-value cargo" id="hudCargo">0/50</div>
+                    <div class="mini-bar"><div class="mini-bar-fill cargo" id="cargoBar"></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Layout -->
+        <div class="main-layout">
+            <!-- Galaxy Map -->
+            <div class="galaxy-container">
+                <div class="galaxy-header">
+                    <div class="galaxy-title">📡 Galaxy Map</div>
+                    <div class="galaxy-controls">
+                        <button class="galaxy-btn" onclick="centerOnPlayer()">🎯 Center</button>
+                    </div>
+                </div>
+                <canvas id="galaxyCanvas" width="800" height="550"></canvas>
+                <div class="system-tooltip" id="systemTooltip"></div>
+            </div>
+            
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <!-- Current Location -->
+                <div class="panel">
+                    <div class="location-banner">
+                        <div class="location-icon" id="locIcon">🌍</div>
+                        <div class="location-name" id="locName">Earth Station</div>
+                        <div class="location-type" id="locType">Space Station</div>
+                    </div>
+                    <div class="action-grid">
+                        <button class="action-btn" onclick="openModal('market')">
+                            <span class="icon">🏪</span>
+                            <span>Market</span>
+                        </button>
+                        <button class="action-btn" onclick="openModal('shipyard')">
+                            <span class="icon">🔧</span>
+                            <span>Shipyard</span>
+                        </button>
+                        <button class="action-btn" onclick="openModal('travel')">
+                            <span class="icon">🚀</span>
+                            <span>Travel</span>
+                        </button>
+                        <button class="action-btn" onclick="refuel()">
+                            <span class="icon">⛽</span>
+                            <span>Refuel</span>
+                        </button>
+                        <button class="action-btn" onclick="repair()">
+                            <span class="icon">🔩</span>
+                            <span>Repair</span>
+                        </button>
+                        <button class="action-btn" onclick="explore()">
+                            <span class="icon">🔭</span>
+                            <span>Explore</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Cargo -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">📦 Cargo Hold</div>
+                    </div>
+                    <div class="panel-content" id="cargoPanel">
+                        <div style="color:#556;font-size:0.85rem;">Empty</div>
+                    </div>
+                </div>
+                
+                <!-- Ship Log -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">📡 Ship Log</div>
+                    </div>
+                    <div class="panel-content" id="logPanel" style="max-height:150px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle">Modal</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+    
+    <!-- Travel Overlay -->
+    <div class="travel-overlay" id="travelOverlay">
+        <div class="travel-stars" id="travelStars"></div>
+        <div class="travel-content">
+            <div class="travel-text" id="travelText">Engaging hyperdrive...</div>
+            <div class="travel-progress">
+                <div class="travel-bar" id="travelBar"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Event Modal -->
+    <div class="modal-overlay" id="eventOverlay">
+        <div class="modal" style="max-width:450px;">
+            <div class="modal-body" id="eventBody"></div>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        // ==================== GAME DATA ====================
+        const COMMODITIES = [
+            { id: 'food', name: 'Food Rations', icon: '🍖', basePrice: 50 },
+            { id: 'water', name: 'Water', icon: '💧', basePrice: 30 },
+            { id: 'ore', name: 'Raw Ore', icon: '🪨', basePrice: 80 },
+            { id: 'metals', name: 'Metals', icon: '🔩', basePrice: 150 },
+            { id: 'electronics', name: 'Electronics', icon: '💻', basePrice: 300 },
+            { id: 'weapons', name: 'Weapons', icon: '🔫', basePrice: 450 },
+            { id: 'medicine', name: 'Medicine', icon: '💊', basePrice: 200 },
+            { id: 'luxury', name: 'Luxuries', icon: '💎', basePrice: 600 },
+            { id: 'fuel', name: 'Fuel Cells', icon: '⚡', basePrice: 100 },
+            { id: 'artifacts', name: 'Artifacts', icon: '🔮', basePrice: 1200 },
+            { id: 'narcotics', name: 'Contraband', icon: '📦', basePrice: 800 },
+            { id: 'tech', name: 'AI Cores', icon: '🤖', basePrice: 2000 },
+        ];
+        
+        const SYSTEM_TYPES = {
+            station: { icon: '🏛️', color: '#3b82f6', name: 'Space Station' },
+            planet: { icon: '🌍', color: '#22c55e', name: 'Planet' },
+            asteroid: { icon: '☄️', color: '#f59e0b', name: 'Asteroid Belt' },
+            moon: { icon: '🌙', color: '#8b5cf6', name: 'Moon Base' },
+            outpost: { icon: '📡', color: '#ef4444', name: 'Outpost' },
+            derelict: { icon: '💀', color: '#666', name: 'Derelict' },
+        };
+        
+        const SYSTEMS = [
+            { id: 'sol', name: 'Sol Station', type: 'station', x: 400, y: 280, 
+              mods: { food: 1.2, water: 1.1, electronics: 0.8, luxury: 0.9 }, 
+              desc: 'Humanity\'s home system. Trade hub.' },
+            { id: 'mars', name: 'Mars Colony', type: 'planet', x: 520, y: 200,
+              mods: { ore: 0.5, metals: 0.6, food: 1.5, water: 1.4 },
+              desc: 'Mining world. Cheap minerals.' },
+            { id: 'titan', name: 'Titan Refinery', type: 'moon', x: 620, y: 350,
+              mods: { fuel: 0.4, electronics: 1.3, medicine: 1.2 },
+              desc: 'Fuel processing. Cheap fuel.' },
+            { id: 'belt', name: 'Belt Station', type: 'asteroid', x: 280, y: 150,
+              mods: { ore: 0.3, metals: 0.4, luxury: 1.6, food: 1.4 },
+              desc: 'Asteroid miners. Rock-bottom ore prices.' },
+            { id: 'europa', name: 'Europa Base', type: 'moon', x: 180, y: 320,
+              mods: { water: 0.2, medicine: 0.6, weapons: 1.4 },
+              desc: 'Ice moon. Water abundant.' },
+            { id: 'proxima', name: 'Proxima Outpost', type: 'outpost', x: 100, y: 180,
+              mods: { artifacts: 0.4, luxury: 0.5, tech: 0.6, food: 1.8 },
+              desc: 'Deep space. Rare goods.' },
+            { id: 'venus', name: 'Venus Haven', type: 'station', x: 480, y: 400,
+              mods: { luxury: 0.6, electronics: 0.85, weapons: 1.5, narcotics: 0.7 },
+              desc: 'Cloud city. Luxury production.' },
+            { id: 'ceres', name: 'Ceres Hub', type: 'asteroid', x: 700, y: 180,
+              mods: { ore: 0.45, fuel: 0.7, artifacts: 1.5, tech: 1.4 },
+              desc: 'Trade crossroads.' },
+            { id: 'ganymede', name: 'Ganymede Labs', type: 'moon', x: 650, y: 450,
+              mods: { tech: 0.5, medicine: 0.7, electronics: 0.75, weapons: 1.3 },
+              desc: 'Research facility. Tech production.' },
+            { id: 'phobos', name: 'Phobos Garrison', type: 'outpost', x: 550, y: 120,
+              mods: { weapons: 0.5, narcotics: 1.8, food: 1.3, luxury: 1.4 },
+              desc: 'Military outpost. Weapons cheap.' },
+            { id: 'io', name: 'Io Foundry', type: 'planet', x: 350, y: 380,
+              mods: { metals: 0.5, electronics: 1.2, ore: 0.7, fuel: 1.3 },
+              desc: 'Volcanic forges. Metal production.' },
+            { id: 'triton', name: 'Triton Station', type: 'station', x: 150, y: 450,
+              mods: { water: 0.3, fuel: 0.6, artifacts: 0.7, tech: 0.8 },
+              desc: 'Outer reaches. Good prices.' },
+            { id: 'charon', name: 'Charon Depot', type: 'outpost', x: 80, y: 80,
+              mods: { narcotics: 0.4, artifacts: 0.5, weapons: 0.7, medicine: 1.5 },
+              desc: 'Lawless frontier. Contraband haven.' },
+            { id: 'derelict1', name: 'Ghost Ship', type: 'derelict', x: 250, y: 250,
+              mods: { artifacts: 0.3, tech: 0.4 },
+              desc: 'Abandoned vessel. Salvage possible.' },
+        ];
+        
+        const UPGRADES = [
+            { id: 'cargo1', name: 'Cargo Bay I', desc: '+20 cargo space', price: 3000, effect: { cargoMax: 20 }, icon: '📦' },
+            { id: 'cargo2', name: 'Cargo Bay II', desc: '+30 cargo space', price: 8000, effect: { cargoMax: 30 }, requires: 'cargo1', icon: '📦' },
+            { id: 'cargo3', name: 'Cargo Bay III', desc: '+50 cargo space', price: 20000, effect: { cargoMax: 50 }, requires: 'cargo2', icon: '📦' },
+            { id: 'fuel1', name: 'Fuel Tank I', desc: '+50 fuel capacity', price: 2000, effect: { fuelMax: 50 }, icon: '⛽' },
+            { id: 'fuel2', name: 'Fuel Tank II', desc: '+50 fuel capacity', price: 5000, effect: { fuelMax: 50 }, requires: 'fuel1', icon: '⛽' },
+            { id: 'engine1', name: 'Ion Drive', desc: '-15% fuel use', price: 8000, effect: { fuelEff: 0.85 }, icon: '🔥' },
+            { id: 'engine2', name: 'Warp Drive', desc: '-25% fuel use', price: 25000, effect: { fuelEff: 0.75 }, requires: 'engine1', icon: '🔥' },
+            { id: 'hull1', name: 'Armor Plating', desc: '+30 hull', price: 4000, effect: { hullMax: 30 }, icon: '🛡️' },
+            { id: 'hull2', name: 'Ablative Armor', desc: '+50 hull', price: 12000, effect: { hullMax: 50 }, requires: 'hull1', icon: '🛡️' },
+            { id: 'weapons1', name: 'Laser Turret', desc: '+10 attack', price: 6000, effect: { attack: 10 }, icon: '🔫' },
+            { id: 'weapons2', name: 'Plasma Cannon', desc: '+20 attack', price: 15000, effect: { attack: 20 }, requires: 'weapons1', icon: '🔫' },
+            { id: 'shields', name: 'Shield Gen', desc: 'Reduces damage', price: 10000, effect: { shields: true }, icon: '🔷' },
+            { id: 'scanner', name: 'Trade Scanner', desc: 'See price trends', price: 3000, effect: { scanner: true }, icon: '📡' },
+            { id: 'cloak', name: 'Stealth System', desc: 'Avoid pirates', price: 30000, effect: { cloak: true }, icon: '👻' },
+        ];
+        
+        const EVENTS = [
+            { 
+                type: 'pirates', chance: 0.18, combat: true,
+                title: '🏴‍☠️ Pirates!',
+                desc: 'A pirate vessel drops out of hyperspace and demands your cargo!',
+                enemy: { name: 'Pirate Raider', hp: 60, attack: 12, icon: '🏴‍☠️' }
+            },
+            {
+                type: 'asteroid', chance: 0.12,
+                title: '☄️ Asteroid Field',
+                desc: 'You fly through an unexpected asteroid field!',
+                effect: (g) => { 
+                    const dmg = Math.floor(Math.random() * 15) + 5; 
+                    g.ship.hull -= dmg; 
+                    return `Hull damaged: -${dmg} HP`; 
+                }
+            },
+            {
+                type: 'salvage', chance: 0.1,
+                title: '🛸 Salvage Found',
+                desc: 'You discover a drifting cargo pod!',
+                effect: (g) => {
+                    const item = COMMODITIES[Math.floor(Math.random() * 6)];
+                    const qty = Math.floor(Math.random() * 5) + 2;
+                    const space = g.ship.cargoMax - getCargoTotal(g.cargo);
+                    const added = Math.min(qty, space);
+                    if (added > 0) {
+                        g.cargo[item.id] = (g.cargo[item.id] || 0) + added;
+                        return `Found ${added}x ${item.name}!`;
+                    }
+                    return 'Cargo hold full. Had to leave it.';
+                }
+            },
+            {
+                type: 'trader', chance: 0.1,
+                title: '🤝 Friendly Trader',
+                desc: 'A merchant offers you supplies at cost.',
+                effect: (g) => {
+                    g.ship.fuel = Math.min(g.ship.fuelMax, g.ship.fuel + 25);
+                    return 'Received +25 fuel!';
+                }
+            },
+            {
+                type: 'anomaly', chance: 0.08,
+                title: '🌀 Space Anomaly',
+                desc: 'Strange energy readings... something valuable?',
+                effect: (g) => {
+                    if (Math.random() > 0.5) {
+                        const bonus = Math.floor(Math.random() * 800) + 200;
+                        g.credits += bonus;
+                        return `Found ancient credits: +${bonus}!`;
+                    } else {
+                        const dmg = Math.floor(Math.random() * 10) + 5;
+                        g.ship.hull -= dmg;
+                        return `Energy surge! Hull: -${dmg}`;
+                    }
+                }
+            },
+            {
+                type: 'distress', chance: 0.08,
+                title: '📻 Distress Signal',
+                desc: 'A ship broadcasts an SOS. Help them?',
+                choices: [
+                    { text: 'Help', effect: (g) => {
+                        if (Math.random() > 0.3) {
+                            const reward = Math.floor(Math.random() * 1000) + 500;
+                            g.credits += reward;
+                            return `Grateful captain paid ${reward} credits!`;
+                        } else {
+                            const dmg = Math.floor(Math.random() * 20) + 10;
+                            g.ship.hull -= dmg;
+                            return `It was a trap! Hull: -${dmg}`;
+                        }
+                    }},
+                    { text: 'Ignore', effect: () => 'You flew on...' }
+                ]
+            },
+            { type: 'clear', chance: 0.34, title: null }
+        ];
+        
+        // ==================== GAME STATE ====================
+        let game = {
+            credits: 10000,
+            day: 1,
+            location: 'sol',
+            ship: {
+                fuel: 100, fuelMax: 100,
+                hull: 100, hullMax: 100,
+                cargoMax: 50,
+                fuelEff: 1,
+                attack: 5,
+                shields: false,
+                cloak: false,
+                scanner: false,
+                upgrades: []
+            },
+            cargo: {},
+            log: [],
+            visited: ['sol'],
+            discovered: SYSTEMS.filter(s => s.type !== 'derelict').map(s => s.id),
+            totalProfit: 0,
+            jumps: 0
+        };
+        
+        // ==================== CANVAS ====================
+        const canvas = document.getElementById('galaxyCanvas');
+        const ctx = canvas.getContext('2d');
+        let hoveredSystem = null;
+        let bgStars = [];
+        
+        // Generate background stars
+        for (let i = 0; i < 300; i++) {
+            bgStars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 1.5 + 0.3,
+                alpha: Math.random() * 0.6 + 0.2
+            });
+        }
+        
+        function drawGalaxy() {
+            // Clear
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Nebula effect
+            const gradient = ctx.createRadialGradient(250, 200, 0, 250, 200, 300);
+            gradient.addColorStop(0, 'rgba(100, 50, 150, 0.08)');
+            gradient.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const gradient2 = ctx.createRadialGradient(600, 400, 0, 600, 400, 250);
+            gradient2.addColorStop(0, 'rgba(50, 100, 150, 0.06)');
+            gradient2.addColorStop(1, 'transparent');
+            ctx.fillStyle = gradient2;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Background stars
+            bgStars.forEach(star => {
+                ctx.fillStyle = `rgba(255,255,255,${star.alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Trade routes
+            ctx.strokeStyle = 'rgba(0, 212, 255, 0.08)';
+            ctx.lineWidth = 1;
+            const currentSys = SYSTEMS.find(s => s.id === game.location);
+            SYSTEMS.forEach(sys => {
+                if (!game.discovered.includes(sys.id)) return;
+                SYSTEMS.forEach(other => {
+                    if (sys.id >= other.id || !game.discovered.includes(other.id)) return;
+                    const dist = getDistance(sys, other);
+                    if (dist < 280) {
+                        ctx.beginPath();
+                        ctx.moveTo(sys.x, sys.y);
+                        ctx.lineTo(other.x, other.y);
+                        ctx.stroke();
+                    }
+                });
+            });
+            
+            // Systems
+            SYSTEMS.forEach(sys => {
+                if (!game.discovered.includes(sys.id)) return;
+                
+                const isCurrent = sys.id === game.location;
+                const isHovered = hoveredSystem === sys.id;
+                const isVisited = game.visited.includes(sys.id);
+                const typeInfo = SYSTEM_TYPES[sys.type];
+                
+                // Glow for current
+                if (isCurrent) {
+                    ctx.shadowColor = typeInfo.color;
+                    ctx.shadowBlur = 25;
+                }
+                
+                // Outer ring for hovered
+                if (isHovered) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(sys.x, sys.y, isCurrent ? 22 : 18, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // System circle
+                ctx.fillStyle = isVisited ? typeInfo.color : '#333';
+                ctx.beginPath();
+                ctx.arc(sys.x, sys.y, isCurrent ? 16 : 11, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.shadowBlur = 0;
+                
+                // Icon
+                ctx.font = isCurrent ? '14px sans-serif' : '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(typeInfo.icon, sys.x, sys.y);
+                
+                // Name
+                ctx.font = '10px Orbitron';
+                ctx.fillStyle = isCurrent ? '#fff' : (isVisited ? '#aaa' : '#555');
+                ctx.fillText(sys.name, sys.x, sys.y + (isCurrent ? 26 : 20));
+            });
+            
+            // Player ship indicator
+            if (currentSys) {
+                ctx.font = '10px sans-serif';
+                ctx.fillText('🚀', currentSys.x + 20, currentSys.y - 15);
+            }
+        }
+        
+        // Canvas events
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            hoveredSystem = null;
+            for (const sys of SYSTEMS) {
+                if (!game.discovered.includes(sys.id)) continue;
+                const dist = Math.sqrt((x - sys.x) ** 2 + (y - sys.y) ** 2);
+                if (dist < 20) {
+                    hoveredSystem = sys.id;
+                    showTooltip(sys, e.clientX, e.clientY);
+                    break;
+                }
+            }
+            
+            if (!hoveredSystem) hideTooltip();
+            drawGalaxy();
+        });
+        
+        canvas.addEventListener('click', (e) => {
+            if (hoveredSystem && hoveredSystem !== game.location) {
+                openModal('travel', hoveredSystem);
+            } else if (hoveredSystem === game.location) {
+                // Already here
+            }
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            hoveredSystem = null;
+            hideTooltip();
+            drawGalaxy();
+        });
+        
+        function showTooltip(sys, mx, my) {
+            const tooltip = document.getElementById('systemTooltip');
+            const typeInfo = SYSTEM_TYPES[sys.type];
+            
+            let priceHtml = '';
+            if (game.ship.scanner && sys.mods) {
+                const tags = [];
+                for (const [id, mod] of Object.entries(sys.mods)) {
+                    const comm = COMMODITIES.find(c => c.id === id);
+                    if (mod < 0.7) tags.push(`<span class="price-tag cheap">${comm.icon} Low</span>`);
+                    else if (mod > 1.3) tags.push(`<span class="price-tag expensive">${comm.icon} High</span>`);
+                }
+                if (tags.length) priceHtml = `<div class="prices">${tags.slice(0, 4).join('')}</div>`;
+            }
+            
+            const fuelCost = calculateFuel(game.location, sys.id);
+            
+            tooltip.innerHTML = `
+                <h4>${typeInfo.icon} ${sys.name}</h4>
+                <div class="type">${typeInfo.name}</div>
+                <div class="info">${sys.desc}</div>
+                ${priceHtml}
+                ${sys.id !== game.location ? `<div class="info" style="color:var(--neon-orange)">⛽ ${fuelCost} fuel to travel</div>` : ''}
+            `;
+            
+            const rect = canvas.getBoundingClientRect();
+            tooltip.style.left = (mx - rect.left + 15) + 'px';
+            tooltip.style.top = (my - rect.top - 10) + 'px';
+            tooltip.classList.add('visible');
+        }
+        
+        function hideTooltip() {
+            document.getElementById('systemTooltip').classList.remove('visible');
+        }
+        
+        function centerOnPlayer() {
+            // Could implement panning later
+        }
+        
+        // ==================== UTILITIES ====================
+        function getDistance(a, b) {
+            const s1 = typeof a === 'string' ? SYSTEMS.find(s => s.id === a) : a;
+            const s2 = typeof b === 'string' ? SYSTEMS.find(s => s.id === b) : b;
+            return Math.sqrt((s1.x - s2.x) ** 2 + (s1.y - s2.y) ** 2);
+        }
+        
+        function calculateFuel(from, to) {
+            const dist = getDistance(from, to);
+            return Math.ceil(dist * 0.12 * game.ship.fuelEff);
+        }
+        
+        function getCargoTotal(cargo) {
+            return Object.values(cargo || game.cargo).reduce((a, b) => a + b, 0);
+        }
+        
+        function getSystemPrices(sysId) {
+            const sys = SYSTEMS.find(s => s.id === sysId);
+            const prices = {};
+            COMMODITIES.forEach(c => {
+                const mod = sys.mods?.[c.id] || 1;
+                const variance = 0.85 + Math.random() * 0.3;
+                prices[c.id] = Math.round(c.basePrice * mod * variance);
+            });
+            return prices;
+        }
+        
+        // Store current prices
+        let currentPrices = {};
+        
+        function addLog(text, type = 'info') {
+            game.log.unshift({ text, type, day: game.day });
+            if (game.log.length > 50) game.log.pop();
+            renderLog();
+        }
+        
+        // ==================== MODALS ====================
+        function openModal(type, data) {
+            const overlay = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const body = document.getElementById('modalBody');
+            
+            switch (type) {
+                case 'market':
+                    title.textContent = '🏪 Trading Post';
+                    body.innerHTML = renderMarket();
+                    break;
+                case 'shipyard':
+                    title.textContent = '🔧 Shipyard';
+                    body.innerHTML = renderShipyard();
+                    break;
+                case 'travel':
+                    title.textContent = '🚀 Navigation';
+                    body.innerHTML = renderTravel(data);
+                    break;
+            }
+            
+            overlay.classList.add('active');
+        }
+        
+        function closeModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+        
+        function renderMarket() {
+            currentPrices = getSystemPrices(game.location);
+            
+            return COMMODITIES.map(c => {
+                const price = currentPrices[c.id];
+                const basePrice = c.basePrice;
+                const priceClass = price < basePrice * 0.75 ? 'low' : (price > basePrice * 1.25 ? 'high' : 'normal');
+                const owned = game.cargo[c.id] || 0;
+                const canBuy = game.credits >= price && getCargoTotal() < game.ship.cargoMax;
+                const canSell = owned > 0;
+                
+                return `
+                    <div class="market-item">
+                        <div class="market-item-info">
+                            <div class="market-item-icon">${c.icon}</div>
+                            <div>
+                                <div class="market-item-name">${c.name}</div>
+                                <div class="market-item-owned">You have: ${owned}</div>
+                            </div>
+                        </div>
+                        <div class="market-item-price ${priceClass}">${price} cr</div>
+                        <div class="market-item-actions">
+                            <button class="qty-btn sell" onclick="sellItem('${c.id}', 10)" ${owned >= 10 ? '' : 'disabled'}>-10</button>
+                            <button class="qty-btn sell" onclick="sellItem('${c.id}', 1)" ${canSell ? '' : 'disabled'}>-1</button>
+                            <button class="qty-btn buy" onclick="buyItem('${c.id}', 1)" ${canBuy ? '' : 'disabled'}>+1</button>
+                            <button class="qty-btn buy" onclick="buyItem('${c.id}', 10)" ${canBuy && game.credits >= price * 10 ? '' : 'disabled'}>+10</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function buyItem(id, qty) {
+            const price = currentPrices[id];
+            const maxAfford = Math.floor(game.credits / price);
+            const maxSpace = game.ship.cargoMax - getCargoTotal();
+            const actual = Math.min(qty, maxAfford, maxSpace);
+            
+            if (actual <= 0) return;
+            
+            game.credits -= price * actual;
+            game.cargo[id] = (game.cargo[id] || 0) + actual;
+            
+            const item = COMMODITIES.find(c => c.id === id);
+            addLog(`Bought ${actual}x ${item.name} for ${price * actual} cr`, 'info');
+            
+            updateHUD();
+            renderCargo();
+            document.getElementById('modalBody').innerHTML = renderMarket();
+        }
+        
+        function sellItem(id, qty) {
+            const owned = game.cargo[id] || 0;
+            const actual = Math.min(qty, owned);
+            if (actual <= 0) return;
+            
+            const price = currentPrices[id];
+            game.credits += price * actual;
+            game.cargo[id] -= actual;
+            if (game.cargo[id] <= 0) delete game.cargo[id];
+            
+            game.totalProfit += price * actual;
+            
+            const item = COMMODITIES.find(c => c.id === id);
+            addLog(`Sold ${actual}x ${item.name} for ${price * actual} cr`, 'profit');
+            
+            updateHUD();
+            renderCargo();
+            document.getElementById('modalBody').innerHTML = renderMarket();
+        }
+        
+        function renderShipyard() {
+            return UPGRADES.map(u => {
+                const owned = game.ship.upgrades.includes(u.id);
+                const canBuy = !owned && game.credits >= u.price && 
+                              (!u.requires || game.ship.upgrades.includes(u.requires));
+                const locked = u.requires && !game.ship.upgrades.includes(u.requires);
+                
+                return `
+                    <div class="upgrade-card ${owned ? 'owned' : ''} ${locked ? 'locked' : ''}">
+                        <div class="upgrade-header">
+                            <div class="upgrade-title">
+                                <span class="icon">${u.icon}</span>
+                                <span class="name">${u.name}</span>
+                            </div>
+                            ${owned ? '<span style="color:var(--neon-green)">✓ Installed</span>' : 
+                              `<span class="upgrade-price">${u.price.toLocaleString()} cr</span>`}
+                        </div>
+                        <div class="upgrade-desc">${u.desc}${locked ? ' (Requires previous tier)' : ''}</div>
+                        ${!owned ? `<button class="upgrade-btn" onclick="buyUpgrade('${u.id}')" ${canBuy ? '' : 'disabled'}>
+                            ${canBuy ? 'Purchase' : (locked ? 'Locked' : 'Insufficient Funds')}
+                        </button>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function buyUpgrade(id) {
+            const upgrade = UPGRADES.find(u => u.id === id);
+            if (!upgrade || game.credits < upgrade.price) return;
+            if (upgrade.requires && !game.ship.upgrades.includes(upgrade.requires)) return;
+            
+            game.credits -= upgrade.price;
+            game.ship.upgrades.push(id);
+            
+            // Apply effects
+            const eff = upgrade.effect;
+            if (eff.cargoMax) game.ship.cargoMax += eff.cargoMax;
+            if (eff.fuelMax) game.ship.fuelMax += eff.fuelMax;
+            if (eff.hullMax) game.ship.hullMax += eff.hullMax;
+            if (eff.fuelEff) game.ship.fuelEff *= eff.fuelEff;
+            if (eff.attack) game.ship.attack += eff.attack;
+            if (eff.shields) game.ship.shields = true;
+            if (eff.cloak) game.ship.cloak = true;
+            if (eff.scanner) game.ship.scanner = true;
+            
+            addLog(`Installed ${upgrade.name}`, 'info');
+            updateHUD();
+            document.getElementById('modalBody').innerHTML = renderShipyard();
+        }
+        
+        function renderTravel(highlightId) {
+            const current = SYSTEMS.find(s => s.id === game.location);
+            
+            return SYSTEMS
+                .filter(s => s.id !== game.location && game.discovered.includes(s.id))
+                .sort((a, b) => getDistance(current, a) - getDistance(current, b))
+                .map(sys => {
+                    const fuelCost = calculateFuel(game.location, sys.id);
+                    const canTravel = game.ship.fuel >= fuelCost;
+                    const typeInfo = SYSTEM_TYPES[sys.type];
+                    const isHighlight = sys.id === highlightId;
+                    
+                    return `
+                        <div class="destination-item ${canTravel ? '' : 'disabled'}" 
+                             ${canTravel ? `onclick="travelTo('${sys.id}')"` : ''}
+                             style="${isHighlight ? 'border-color:var(--neon-blue);background:rgba(0,212,255,0.1)' : ''}">
+                            <div class="destination-info">
+                                <div class="destination-icon">${typeInfo.icon}</div>
+                                <div>
+                                    <div class="destination-name">${sys.name}</div>
+                                    <div class="destination-type">${typeInfo.name}</div>
+                                </div>
+                            </div>
+                            <div class="destination-cost">
+                                <div class="destination-fuel">⛽ ${fuelCost}</div>
+                                <div class="destination-dist">${Math.round(getDistance(current, sys))} ly</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+        
+        // ==================== TRAVEL ====================
+        async function travelTo(destId) {
+            const fuelCost = calculateFuel(game.location, destId);
+            if (game.ship.fuel < fuelCost) {
+                addLog('Not enough fuel!', 'warning');
+                return;
+            }
+            
+            closeModal();
+            
+            const dest = SYSTEMS.find(s => s.id === destId);
+            
+            // Show travel animation
+            const overlay = document.getElementById('travelOverlay');
+            const bar = document.getElementById('travelBar');
+            const text = document.getElementById('travelText');
+            
+            // Create star lines
+            const starsDiv = document.getElementById('travelStars');
+            starsDiv.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.className = 'star-line';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.height = (Math.random() * 100 + 50) + 'px';
+                star.style.animationDelay = Math.random() * 0.5 + 's';
+                starsDiv.appendChild(star);
+            }
+            
+            text.textContent = `Jumping to ${dest.name}...`;
+            overlay.classList.add('active');
+            bar.style.width = '0%';
+            
+            await sleep(100);
+            bar.style.width = '100%';
+            
+            await sleep(1800);
+            
+            // Apply travel
+            game.ship.fuel -= fuelCost;
+            game.location = destId;
+            game.day++;
+            game.jumps++;
+            if (!game.visited.includes(destId)) {
+                game.visited.push(destId);
+                if (dest.type === 'derelict') {
+                    addLog(`Discovered ${dest.name}!`, 'discovery');
+                }
+            }
+            
+            // Random event?
+            let hadEvent = false;
+            if (!game.ship.cloak || Math.random() > 0.7) {
+                const roll = Math.random();
+                let cumulative = 0;
+                for (const event of EVENTS) {
+                    cumulative += event.chance;
+                    if (roll <= cumulative && event.title) {
+                        hadEvent = true;
+                        overlay.classList.remove('active');
+                        await sleep(300);
+                        await showEvent(event);
+                        break;
+                    }
+                }
+            }
+            
+            // Clamp values
+            game.ship.fuel = Math.max(0, game.ship.fuel);
+            game.ship.hull = Math.max(0, game.ship.hull);
+            
+            if (!hadEvent) {
+                overlay.classList.remove('active');
+            }
+            
+            addLog(`Arrived at ${dest.name}`, 'info');
+            
+            // Check game over
+            if (game.ship.hull <= 0) {
+                gameOver();
+                return;
+            }
+            
+            updateHUD();
+            updateLocation();
+            drawGalaxy();
+            saveGame();
+        }
+        
+        function showEvent(event) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('eventOverlay');
+                const body = document.getElementById('eventBody');
+                
+                if (event.combat) {
+                    // Combat event
+                    body.innerHTML = `
+                        <div class="combat-display">
+                            <div class="event-icon">${event.enemy.icon}</div>
+                            <div class="event-title">${event.title}</div>
+                            <div class="event-desc">${event.desc}</div>
+                            
+                            <div class="combat-ships">
+                                <div class="combat-ship">
+                                    <div class="icon">🚀</div>
+                                    <div class="name">Your Ship</div>
+                                    <div class="combat-hp">
+                                        <div class="combat-hp-fill" id="playerHpBar" style="width:${(game.ship.hull / game.ship.hullMax) * 100}%"></div>
+                                    </div>
+                                    <div id="playerHpText" style="font-size:0.8rem;color:#888;margin-top:4px">${game.ship.hull}/${game.ship.hullMax}</div>
+                                </div>
+                                <div class="combat-vs">VS</div>
+                                <div class="combat-ship">
+                                    <div class="icon">${event.enemy.icon}</div>
+                                    <div class="name">${event.enemy.name}</div>
+                                    <div class="combat-hp">
+                                        <div class="combat-hp-fill" id="enemyHpBar" style="width:100%"></div>
+                                    </div>
+                                    <div id="enemyHpText" style="font-size:0.8rem;color:#888;margin-top:4px">${event.enemy.hp}/${event.enemy.hp}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="combat-log" id="combatLog">Combat begins!</div>
+                            
+                            <div class="combat-actions">
+                                <button class="combat-btn attack" id="attackBtn" onclick="combatAttack()">⚔️ Attack</button>
+                                <button class="combat-btn flee" id="fleeBtn" onclick="combatFlee()">🏃 Flee</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Store combat state
+                    window.combatState = {
+                        enemy: { ...event.enemy, currentHp: event.enemy.hp },
+                        resolve: resolve
+                    };
+                    
+                } else if (event.choices) {
+                    // Choice event
+                    const buttons = event.choices.map((c, i) => 
+                        `<button class="event-btn" style="margin:5px" onclick="makeChoice(${i})">${c.text}</button>`
+                    ).join('');
+                    
+                    body.innerHTML = `
+                        <div class="event-content">
+                            <div class="event-icon">📻</div>
+                            <div class="event-title">${event.title}</div>
+                            <div class="event-desc">${event.desc}</div>
+                            <div>${buttons}</div>
+                        </div>
+                    `;
+                    
+                    window.eventState = { event, resolve };
+                    
+                } else {
+                    // Simple event
+                    const result = event.effect(game);
+                    
+                    body.innerHTML = `
+                        <div class="event-content">
+                            <div class="event-icon">${event.title.split(' ')[0]}</div>
+                            <div class="event-title">${event.title}</div>
+                            <div class="event-desc">${event.desc}</div>
+                            <div class="event-result">${result}</div>
+                            <button class="event-btn" onclick="closeEvent()">Continue</button>
+                        </div>
+                    `;
+                    
+                    window.eventState = { resolve };
+                }
+                
+                overlay.classList.add('active');
+            });
+        }
+        
+        function makeChoice(index) {
+            const { event, resolve } = window.eventState;
+            const choice = event.choices[index];
+            const result = choice.effect(game);
+            
+            document.getElementById('eventBody').innerHTML = `
+                <div class="event-content">
+                    <div class="event-icon">📻</div>
+                    <div class="event-title">${event.title}</div>
+                    <div class="event-result">${result}</div>
+                    <button class="event-btn" onclick="closeEvent()">Continue</button>
+                </div>
+            `;
+            
+            window.eventState = { resolve };
+        }
+        
+        function closeEvent() {
+            document.getElementById('eventOverlay').classList.remove('active');
+            if (window.eventState?.resolve) {
+                window.eventState.resolve();
+            }
+            updateHUD();
+        }
+        
+        function combatAttack() {
+            const state = window.combatState;
+            const log = document.getElementById('combatLog');
+            
+            // Player attacks
+            const playerDmg = Math.floor(game.ship.attack * (0.8 + Math.random() * 0.4));
+            state.enemy.currentHp -= playerDmg;
+            log.innerHTML += `<br>You deal ${playerDmg} damage!`;
+            
+            // Update enemy HP bar
+            const enemyPct = Math.max(0, (state.enemy.currentHp / state.enemy.hp) * 100);
+            document.getElementById('enemyHpBar').style.width = enemyPct + '%';
+            document.getElementById('enemyHpText').textContent = `${Math.max(0, state.enemy.currentHp)}/${state.enemy.hp}`;
+            if (enemyPct < 30) document.getElementById('enemyHpBar').classList.add('low');
+            
+            // Check enemy death
+            if (state.enemy.currentHp <= 0) {
+                log.innerHTML += `<br><span style="color:var(--neon-green)">Enemy destroyed!</span>`;
+                const loot = Math.floor(Math.random() * 500) + 200;
+                game.credits += loot;
+                log.innerHTML += `<br>Salvaged ${loot} credits!`;
+                addLog(`Defeated ${state.enemy.name}, got ${loot} cr`, 'profit');
+                
+                document.getElementById('attackBtn').disabled = true;
+                document.getElementById('fleeBtn').disabled = true;
+                
+                setTimeout(() => {
+                    document.getElementById('eventOverlay').classList.remove('active');
+                    state.resolve();
+                    updateHUD();
+                }, 1500);
+                return;
+            }
+            
+            // Enemy attacks
+            let enemyDmg = Math.floor(state.enemy.attack * (0.8 + Math.random() * 0.4));
+            if (game.ship.shields) enemyDmg = Math.floor(enemyDmg * 0.7);
+            game.ship.hull -= enemyDmg;
+            log.innerHTML += `<br>Enemy deals ${enemyDmg} damage!`;
+            
+            // Update player HP
+            const playerPct = Math.max(0, (game.ship.hull / game.ship.hullMax) * 100);
+            document.getElementById('playerHpBar').style.width = playerPct + '%';
+            document.getElementById('playerHpText').textContent = `${Math.max(0, game.ship.hull)}/${game.ship.hullMax}`;
+            if (playerPct < 30) document.getElementById('playerHpBar').classList.add('low');
+            
+            // Check player death
+            if (game.ship.hull <= 0) {
+                log.innerHTML += `<br><span style="color:var(--neon-red)">Ship destroyed!</span>`;
+                document.getElementById('attackBtn').disabled = true;
+                document.getElementById('fleeBtn').disabled = true;
+                
+                setTimeout(() => {
+                    document.getElementById('eventOverlay').classList.remove('active');
+                    state.resolve();
+                    gameOver();
+                }, 1500);
+            }
+            
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        function combatFlee() {
+            const state = window.combatState;
+            const log = document.getElementById('combatLog');
+            
+            if (Math.random() > 0.4) {
+                log.innerHTML += `<br><span style="color:var(--neon-green)">Escaped!</span>`;
+                addLog('Fled from combat', 'warning');
+                
+                document.getElementById('attackBtn').disabled = true;
+                document.getElementById('fleeBtn').disabled = true;
+                
+                setTimeout(() => {
+                    document.getElementById('eventOverlay').classList.remove('active');
+                    state.resolve();
+                }, 1000);
+            } else {
+                log.innerHTML += `<br>Escape failed!`;
+                
+                // Enemy gets free attack
+                let enemyDmg = Math.floor(state.enemy.attack * (0.8 + Math.random() * 0.4));
+                if (game.ship.shields) enemyDmg = Math.floor(enemyDmg * 0.7);
+                game.ship.hull -= enemyDmg;
+                log.innerHTML += `<br>Enemy deals ${enemyDmg} damage!`;
+                
+                const playerPct = Math.max(0, (game.ship.hull / game.ship.hullMax) * 100);
+                document.getElementById('playerHpBar').style.width = playerPct + '%';
+                document.getElementById('playerHpText').textContent = `${Math.max(0, game.ship.hull)}/${game.ship.hullMax}`;
+                
+                if (game.ship.hull <= 0) {
+                    document.getElementById('attackBtn').disabled = true;
+                    document.getElementById('fleeBtn').disabled = true;
+                    setTimeout(() => {
+                        document.getElementById('eventOverlay').classList.remove('active');
+                        state.resolve();
+                        gameOver();
+                    }, 1500);
+                }
+            }
+            
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // ==================== LOCATION ACTIONS ====================
+        function refuel() {
+            const needed = game.ship.fuelMax - game.ship.fuel;
+            if (needed <= 0) {
+                addLog('Fuel tank already full', 'info');
+                return;
+            }
+            
+            const price = 2; // per unit
+            const afford = Math.floor(game.credits / price);
+            const actual = Math.min(needed, afford);
+            
+            if (actual <= 0) {
+                addLog('Not enough credits for fuel', 'warning');
+                return;
+            }
+            
+            game.credits -= actual * price;
+            game.ship.fuel += actual;
+            addLog(`Refueled +${actual} for ${actual * price} cr`, 'info');
+            updateHUD();
+        }
+        
+        function repair() {
+            const needed = game.ship.hullMax - game.ship.hull;
+            if (needed <= 0) {
+                addLog('Hull at full integrity', 'info');
+                return;
+            }
+            
+            const price = 5; // per HP
+            const afford = Math.floor(game.credits / price);
+            const actual = Math.min(needed, afford);
+            
+            if (actual <= 0) {
+                addLog('Not enough credits for repairs', 'warning');
+                return;
+            }
+            
+            game.credits -= actual * price;
+            game.ship.hull += actual;
+            addLog(`Repaired +${actual} HP for ${actual * price} cr`, 'info');
+            updateHUD();
+        }
+        
+        function explore() {
+            // Random chance to discover new location
+            const undiscovered = SYSTEMS.filter(s => !game.discovered.includes(s.id));
+            if (undiscovered.length === 0) {
+                addLog('No new systems to discover', 'info');
+                return;
+            }
+            
+            const cost = 500;
+            if (game.credits < cost) {
+                addLog(`Need ${cost} cr to fund exploration`, 'warning');
+                return;
+            }
+            
+            game.credits -= cost;
+            
+            if (Math.random() > 0.4) {
+                const found = undiscovered[Math.floor(Math.random() * undiscovered.length)];
+                game.discovered.push(found.id);
+                addLog(`Discovered ${found.name}!`, 'discovery');
+                drawGalaxy();
+            } else {
+                addLog('Exploration found nothing new', 'info');
+            }
+            
+            updateHUD();
+        }
+        
+        // ==================== UI UPDATES ====================
+        function updateHUD() {
+            document.getElementById('hudCredits').textContent = game.credits.toLocaleString();
+            document.getElementById('hudDay').textContent = game.day;
+            
+            document.getElementById('hudFuel').textContent = `${game.ship.fuel}/${game.ship.fuelMax}`;
+            document.getElementById('fuelBar').style.width = `${(game.ship.fuel / game.ship.fuelMax) * 100}%`;
+            
+            document.getElementById('hudHull').textContent = `${game.ship.hull}/${game.ship.hullMax}`;
+            document.getElementById('hullBar').style.width = `${(game.ship.hull / game.ship.hullMax) * 100}%`;
+            
+            const cargoAmt = getCargoTotal();
+            document.getElementById('hudCargo').textContent = `${cargoAmt}/${game.ship.cargoMax}`;
+            document.getElementById('cargoBar').style.width = `${(cargoAmt / game.ship.cargoMax) * 100}%`;
+            
+            renderCargo();
+        }
+        
+        function updateLocation() {
+            const sys = SYSTEMS.find(s => s.id === game.location);
+            const typeInfo = SYSTEM_TYPES[sys.type];
+            
+            document.getElementById('locIcon').textContent = typeInfo.icon;
+            document.getElementById('locName').textContent = sys.name;
+            document.getElementById('locType').textContent = typeInfo.name;
+        }
+        
+        function renderCargo() {
+            const panel = document.getElementById('cargoPanel');
+            const items = Object.entries(game.cargo).filter(([_, qty]) => qty > 0);
+            
+            if (items.length === 0) {
+                panel.innerHTML = '<div style="color:#556;font-size:0.85rem;">Empty</div>';
+            } else {
+                panel.innerHTML = items.map(([id, qty]) => {
+                    const comm = COMMODITIES.find(c => c.id === id);
+                    return `
+                        <div class="cargo-item">
+                            <div class="cargo-info">
+                                <span>${comm.icon}</span>
+                                <span>${comm.name}</span>
+                            </div>
+                            <div class="cargo-qty">${qty}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        function renderLog() {
+            const panel = document.getElementById('logPanel');
+            panel.innerHTML = game.log.slice(0, 15).map(entry => `
+                <div class="log-entry ${entry.type}">
+                    <span class="time">Day ${entry.day}</span> ${entry.text}
+                </div>
+            `).join('');
+        }
+        
+        function gameOver() {
+            const score = game.totalProfit + game.credits;
+            GameUtils.showGameOver(score, 'startrader', {
+                extraData: {
+                    credits: game.credits,
+                    days: game.day,
+                    jumps: game.jumps,
+                    systems: game.visited.length,
+                    profit: game.totalProfit
+                }
+            });
+        }
+        
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+        
+        function saveGame() {
+            localStorage.setItem('gameatica_startrader_save', JSON.stringify(game));
+        }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('gameatica_startrader_save');
+            if (saved) {
+                try {
+                    const loaded = JSON.parse(saved);
+                    game = { ...game, ...loaded };
+                    game.ship = { ...game.ship, ...loaded.ship };
+                } catch (e) {}
+            }
+        }
+        
+        // ==================== INIT ====================
+        loadGame();
+        updateHUD();
+        updateLocation();
+        renderLog();
+        drawGalaxy();
+        
+        if (game.log.length === 0) {
+            addLog('Welcome, Captain. Your journey begins.', 'info');
+        }
+        
+        // Auto-save
+        setInterval(saveGame, 30000);
+    </script>
+</body>
+</html>
