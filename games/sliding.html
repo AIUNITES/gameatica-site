@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sliding Puzzle - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+    <style>
+        .puzzle-grid {
+            display: grid;
+            gap: 4px;
+            background: #1a1a24;
+            padding: 8px;
+            border-radius: 12px;
+            width: fit-content;
+            margin: 0 auto;
+        }
+        .puzzle-tile {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .puzzle-tile:hover:not(.empty) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        .puzzle-tile.empty {
+            background: transparent;
+            box-shadow: none;
+            cursor: default;
+        }
+        .puzzle-tile.movable {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+        }
+        .size-select {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .size-btn {
+            padding: 10px 20px;
+            background: var(--dark-card);
+            border: 2px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--white);
+            cursor: pointer;
+        }
+        .size-btn:hover { border-color: var(--primary); }
+        .size-btn.active { background: var(--gradient); border-color: transparent; }
+        
+        @media (max-width: 400px) {
+            .puzzle-tile { width: 60px; height: 60px; font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🧩 Sliding Puzzle</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Moves</div>
+                <div class="value" id="moves">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Time</div>
+                <div class="value" id="time">0:00</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">--</div>
+            </div>
+        </div>
+
+        <div class="size-select">
+            <button class="size-btn active" data-size="3">3×3</button>
+            <button class="size-btn" data-size="4">4×4</button>
+            <button class="size-btn" data-size="5">5×5</button>
+        </div>
+
+        <div class="game-board">
+            <div class="puzzle-grid" id="puzzleGrid"></div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="shuffleBtn">🔀 Shuffle</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 Best Times</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Click tiles adjacent to the empty space to move them</li>
+                <li>Arrange numbers in order from 1 to N</li>
+                <li>Solve in fewest moves for high score!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'sliding';
+        let gridSize = 3;
+        let tiles = [];
+        let emptyPos = { row: 0, col: 0 };
+        let moves = 0;
+        let startTime = null;
+        let timerInterval = null;
+        let isPlaying = false;
+        
+        function init() {
+            clearInterval(timerInterval);
+            moves = 0;
+            startTime = null;
+            isPlaying = false;
+            
+            const total = gridSize * gridSize;
+            tiles = [];
+            for (let i = 1; i < total; i++) tiles.push(i);
+            tiles.push(0); // Empty
+            
+            emptyPos = { row: gridSize - 1, col: gridSize - 1 };
+            
+            updateUI();
+            render();
+            updateBest();
+        }
+        
+        function shuffle() {
+            // Do many random valid moves to ensure solvability
+            for (let i = 0; i < gridSize * gridSize * 100; i++) {
+                const movable = getMovableTiles();
+                if (movable.length > 0) {
+                    const random = movable[Math.floor(Math.random() * movable.length)];
+                    swapWithEmpty(random.row, random.col, false);
+                }
+            }
+            
+            moves = 0;
+            startTime = Date.now();
+            isPlaying = true;
+            timerInterval = setInterval(updateTimer, 100);
+            
+            updateUI();
+            render();
+        }
+        
+        function getMovableTiles() {
+            const movable = [];
+            const dirs = [[-1,0], [1,0], [0,-1], [0,1]];
+            
+            dirs.forEach(([dr, dc]) => {
+                const r = emptyPos.row + dr;
+                const c = emptyPos.col + dc;
+                if (r >= 0 && r < gridSize && c >= 0 && c < gridSize) {
+                    movable.push({ row: r, col: c });
+                }
+            });
+            
+            return movable;
+        }
+        
+        function swapWithEmpty(row, col, countMove = true) {
+            const tileIdx = row * gridSize + col;
+            const emptyIdx = emptyPos.row * gridSize + emptyPos.col;
+            
+            [tiles[tileIdx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[tileIdx]];
+            emptyPos = { row, col };
+            
+            if (countMove) {
+                moves++;
+                GameUtils.vibrate(20);
+                updateUI();
+                
+                if (checkWin()) {
+                    win();
+                }
+            }
+        }
+        
+        function handleClick(row, col) {
+            if (!isPlaying) return;
+            
+            const movable = getMovableTiles();
+            const canMove = movable.some(m => m.row === row && m.col === col);
+            
+            if (canMove) {
+                swapWithEmpty(row, col);
+                render();
+            }
+        }
+        
+        function checkWin() {
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (tiles[i] !== i + 1) return false;
+            }
+            return tiles[tiles.length - 1] === 0;
+        }
+        
+        function win() {
+            isPlaying = false;
+            clearInterval(timerInterval);
+            
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const score = Math.max(0, 10000 - moves * 10 - elapsed * 5);
+            
+            GameUtils.playSound('levelup');
+            GameUtils.showGameOver(score, GAME_ID + gridSize, {
+                extraData: { moves, time: elapsed, gridSize }
+            });
+        }
+        
+        function render() {
+            const grid = document.getElementById('puzzleGrid');
+            grid.style.gridTemplateColumns = `repeat(${gridSize}, 70px)`;
+            
+            const movable = getMovableTiles();
+            
+            let html = '';
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const idx = row * gridSize + col;
+                    const val = tiles[idx];
+                    const isEmpty = val === 0;
+                    const canMove = movable.some(m => m.row === row && m.col === col);
+                    
+                    html += `<button class="puzzle-tile ${isEmpty ? 'empty' : ''} ${canMove && isPlaying ? 'movable' : ''}" 
+                             data-row="${row}" data-col="${col}">
+                             ${isEmpty ? '' : val}</button>`;
+                }
+            }
+            
+            grid.innerHTML = html;
+            
+            grid.querySelectorAll('.puzzle-tile').forEach(tile => {
+                tile.addEventListener('click', () => {
+                    handleClick(parseInt(tile.dataset.row), parseInt(tile.dataset.col));
+                });
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('moves').textContent = moves;
+        }
+        
+        function updateTimer() {
+            if (!startTime) return;
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('time').textContent = GameUtils.formatTime(elapsed);
+        }
+        
+        function updateBest() {
+            const scores = GameUtils.getHighScores(GAME_ID + gridSize, 1);
+            if (scores.length > 0 && scores[0].moves) {
+                document.getElementById('best').textContent = scores[0].moves + ' moves';
+            } else {
+                document.getElementById('best').textContent = '--';
+            }
+            GameUtils.renderLeaderboard(GAME_ID + gridSize, 'leaderboard');
+        }
+        
+        // Size selection
+        document.querySelectorAll('.size-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                gridSize = parseInt(btn.dataset.size);
+                init();
+            });
+        });
+        
+        document.getElementById('shuffleBtn').addEventListener('click', shuffle);
+        
+        init();
+    </script>
+</body>
+</html>
