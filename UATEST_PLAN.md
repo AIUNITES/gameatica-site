@@ -31,6 +31,11 @@
 | Flappy | games/flappy.html | Flying obstacle game | ✅ |
 | Pong | games/pong.html | Classic paddle game | ✅ |
 | Simon Says | games/simon.html | Memory pattern game | ✅ |
+| Asteroids | games/asteroids.html | Space shooter | ✅ |
+| Blackjack | games/blackjack.html | Card game vs dealer | ✅ |
+| Match 3 | games/match3.html | Gem matching | ✅ |
+| Sliding Puzzle | games/sliding.html | Tile slider | ✅ |
+| Sudoku | games/sudoku.html | Number logic puzzle | ✅ |
 
 ---
 
@@ -39,7 +44,7 @@
 ### 🎮 Arcade Hub (index.html)
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Game grid display | ✅ | 13 games with icons |
+| Game grid display | ✅ | 18 games with icons |
 | Category filters | ✅ | All/Arcade/Puzzle/Skill/Word |
 | Player name system | ✅ | Stored in localStorage |
 | Play count stats | ✅ | Tracks total plays |
@@ -200,6 +205,56 @@
 | Round progression | ✅ |
 | Speed increases | ✅ |
 
+### ☄️ Asteroids
+| Feature | Status |
+|---------|--------|
+| Ship controls | ✅ |
+| Asteroid spawning | ✅ |
+| Bullet shooting | ✅ |
+| Wrap-around screen | ✅ |
+| Score tracking | ✅ |
+| Lives system | ✅ |
+
+### 🃏 Blackjack
+| Feature | Status |
+|---------|--------|
+| Card deck | ✅ |
+| Hit action | ✅ |
+| Stand action | ✅ |
+| Double down | ✅ |
+| Dealer AI | ✅ |
+| Chip betting | ✅ |
+
+### 💎 Match 3
+| Feature | Status |
+|---------|--------|
+| Grid of gems | ✅ |
+| Swap mechanic | ✅ |
+| Match detection | ✅ |
+| Cascade system | ✅ |
+| Score tracking | ✅ |
+| Timer/moves modes | ✅ |
+
+### 🧩 Sliding Puzzle
+| Feature | Status |
+|---------|--------|
+| 3x3 grid mode | ✅ |
+| 4x4 grid mode | ✅ |
+| Tile sliding | ✅ |
+| Shuffle function | ✅ |
+| Move counter | ✅ |
+| Win detection | ✅ |
+
+### 9️⃣ Sudoku
+| Feature | Status |
+|---------|--------|
+| Easy difficulty | ✅ |
+| Medium difficulty | ✅ |
+| Hard difficulty | ✅ |
+| Number input | ✅ |
+| Conflict highlighting | ✅ |
+| Timer | ✅ |
+
 ---
 
 ## localStorage Keys
@@ -216,7 +271,7 @@
 ## Test Scenarios
 
 ### Hub Tests
-- [ ] All 13 game cards display correctly
+- [ ] All 18 game cards display correctly
 - [ ] Category filter buttons work
 - [ ] Player name changes and persists
 - [ ] Play count updates after playing games
