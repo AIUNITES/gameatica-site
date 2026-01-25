@@ -56,7 +56,39 @@
 
 ---
 
-## Core Features
+## Core Features (From DemoTemplate)
+
+### 🔐 Authentication System
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Registration | ✅ | Signup form with validation |
+| User Login | ✅ | Username/password auth |
+| Demo Mode Login | ✅ | Quick demo button |
+| Logout | ✅ | Clears session |
+| First User = Admin | ✅ | Admin gets admin panel |
+| Auto-create Demo Users | ✅ | admin/demo accounts |
+
+### 👤 User Menu & Modals
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Dropdown Menu | ✅ | Click avatar for dropdown |
+| Settings Modal | ✅ | Edit name/email |
+| Backup Data | ✅ | Download JSON backup |
+| Profile Modal | ✅ | Stats, games played, best scores |
+| Admin Panel Modal | ✅ | Stats, Users, Leaderboards, Changelog |
+| Toast Notifications | ✅ | Success/error messages |
+
+### 🛠️ Admin Panel Modal Tabs
+| Tab | Features | Status |
+|-----|----------|--------|
+| Statistics | Total users, total scores, app version | ✅ |
+| Users | User list with avatars, stats | ✅ |
+| Leaderboards | Top scores per game | ✅ |
+| Changelog | Version history | ✅ |
+
+---
+
+## Site Features
 
 ### 🎮 Arcade Hub (index.html)
 | Feature | Status | Notes |
@@ -552,7 +584,7 @@
 | 2.1.0 | Jan 25, 2026 | Added Star Trader (19 games total) |
 | 2.2.0 | Jan 25, 2026 | Added 6 Math Learning Games (25 games total) |
 | 2.3.0 | Jan 25, 2026 | Added 6 more Math Games (31 games total) |
-| 2.4.0 | Jan 25, 2026 | Added 4 English/LA Games (35 games total) |
+| 2.5.0 | Jan 25, 2026 | Added Auth System (login, profile, admin) |
 
 ---
 
