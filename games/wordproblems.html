@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Word Problems - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 6px 15px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        .problem-text {
+            font-size: 1.25rem;
+            line-height: 1.7;
+            color: var(--white);
+            max-width: 500px;
+            margin: 0 auto 25px;
+            text-align: left;
+            background: var(--dark);
+            padding: 20px 25px;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+        }
+        .answer-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .answer-input {
+            width: 120px;
+            padding: 12px 15px;
+            font-size: 1.3rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: var(--white);
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .unit-label {
+            color: var(--gray-light);
+            font-size: 1.1rem;
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: var(--gray-light);
+            text-align: left;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            display: none;
+        }
+        .explanation.visible { display: block; }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+        }
+        .dot.done { background: var(--success); }
+        .dot.wrong { background: var(--primary); }
+        .dot.current { background: var(--gray); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📝 Word Problems</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Problem</div>
+                <div class="value" id="problemNum">1/10</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="money">💰 Money</button>
+            <button class="topic-btn" data-topic="distance">🚗 Distance</button>
+            <button class="topic-btn" data-topic="percent">📊 Percent</button>
+            <button class="topic-btn" data-topic="ratio">⚖️ Ratio</button>
+            <button class="topic-btn" data-topic="age">👥 Age</button>
+            <button class="topic-btn" data-topic="mixed">🎲 Mixed</button>
+        </div>
+
+        <div class="progress-dots" id="progressDots"></div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="category-badge" id="categoryBadge">💰 Money Problem</div>
+                <div class="problem-text" id="problemText">
+                    Sarah buys 3 notebooks at $4 each and 2 pens at $2 each. How much does she spend in total?
+                </div>
+                <div class="answer-section">
+                    <input type="number" class="answer-input" id="answerInput" placeholder="?" step="any" autofocus>
+                    <span class="unit-label" id="unitLabel">dollars</span>
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="showWorkBtn">📐 Show Work</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next Problem →</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Problem Categories</h3>
+            <ul>
+                <li><strong>Money:</strong> Shopping, budgets, prices</li>
+                <li><strong>Distance:</strong> Speed, time, travel</li>
+                <li><strong>Percent:</strong> Discounts, tips, taxes</li>
+                <li><strong>Ratio:</strong> Proportions, recipes, mixing</li>
+                <li><strong>Age:</strong> Age comparisons, time problems</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'wordproblems';
+        
+        let score = 0;
+        let correctCount = 0;
+        let problemIndex = 0;
+        let totalProblems = 10;
+        let topic = 'money';
+        let currentProblem = null;
+        let answered = false;
+        let results = [];
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        const PROBLEMS = {
+            money: [
+                () => {
+                    const items = randInt(2, 5);
+                    const price = randInt(3, 15);
+                    const total = items * price;
+                    return {
+                        text: `You buy ${items} books at $${price} each. What is the total cost?`,
+                        answer: total,
+                        unit: 'dollars',
+                        explanation: `${items} × $${price} = $${total}`
+                    };
+                },
+                () => {
+                    const a = randInt(2, 6), pa = randInt(3, 10);
+                    const b = randInt(2, 5), pb = randInt(2, 8);
+                    const total = a * pa + b * pb;
+                    return {
+                        text: `Emma buys ${a} sandwiches at $${pa} each and ${b} drinks at $${pb} each. How much does she spend?`,
+                        answer: total,
+                        unit: 'dollars',
+                        explanation: `(${a} × $${pa}) + (${b} × $${pb}) = $${a*pa} + $${b*pb} = $${total}`
+                    };
+                },
+                () => {
+                    const start = randInt(50, 100);
+                    const spent = randInt(15, start - 10);
+                    const left = start - spent;
+                    return {
+                        text: `Jake has $${start}. He spends $${spent} on groceries. How much money does he have left?`,
+                        answer: left,
+                        unit: 'dollars',
+                        explanation: `$${start} - $${spent} = $${left}`
+                    };
+                },
+                () => {
+                    const price = randInt(20, 80);
+                    const bills = randInt(2, 4);
+                    const paid = bills * 20;
+                    const change = paid - price;
+                    return {
+                        text: `A shirt costs $${price}. You pay with ${bills} twenty-dollar bills. How much change do you get?`,
+                        answer: change,
+                        unit: 'dollars',
+                        explanation: `${bills} × $20 = $${paid}. Change: $${paid} - $${price} = $${change}`
+                    };
+                },
+                () => {
+                    const weekly = randInt(10, 30);
+                    const weeks = randInt(4, 12);
+                    const total = weekly * weeks;
+                    return {
+                        text: `Maria saves $${weekly} every week. How much will she have saved after ${weeks} weeks?`,
+                        answer: total,
+                        unit: 'dollars',
+                        explanation: `$${weekly} × ${weeks} weeks = $${total}`
+                    };
+                }
+            ],
+            distance: [
+                () => {
+                    const speed = randInt(40, 70);
+                    const time = randInt(2, 5);
+                    const distance = speed * time;
+                    return {
+                        text: `A car travels at ${speed} mph for ${time} hours. How far does it travel?`,
+                        answer: distance,
+                        unit: 'miles',
+                        explanation: `Distance = Speed × Time = ${speed} × ${time} = ${distance} miles`
+                    };
+                },
+                () => {
+                    const distance = randInt(100, 300);
+                    const speed = randInt(40, 60);
+                    const time = distance / speed;
+                    return {
+                        text: `How long does it take to drive ${distance} miles at ${speed} mph?`,
+                        answer: time,
+                        unit: 'hours',
+                        explanation: `Time = Distance ÷ Speed = ${distance} ÷ ${speed} = ${time} hours`
+                    };
+                },
+                () => {
+                    const there = randInt(15, 40);
+                    const back = randInt(15, 40);
+                    const total = there + back;
+                    return {
+                        text: `Tom walks ${there} minutes to school and ${back} minutes back home. What's his total walking time?`,
+                        answer: total,
+                        unit: 'minutes',
+                        explanation: `${there} + ${back} = ${total} minutes`
+                    };
+                },
+                () => {
+                    const laps = randInt(4, 10);
+                    const meters = randInt(200, 400);
+                    const total = laps * meters;
+                    return {
+                        text: `A runner completes ${laps} laps around a ${meters}-meter track. What's the total distance?`,
+                        answer: total,
+                        unit: 'meters',
+                        explanation: `${laps} laps × ${meters} m = ${total} meters`
+                    };
+                }
+            ],
+            percent: [
+                () => {
+                    const price = randInt(20, 100);
+                    const percent = [10, 20, 25, 50][randInt(0, 3)];
+                    const discount = price * percent / 100;
+                    const final = price - discount;
+                    return {
+                        text: `A $${price} item is ${percent}% off. What's the sale price?`,
+                        answer: final,
+                        unit: 'dollars',
+                        explanation: `Discount: $${price} × ${percent}% = $${discount}. Sale price: $${price} - $${discount} = $${final}`
+                    };
+                },
+                () => {
+                    const bill = randInt(20, 80);
+                    const tipPercent = [15, 18, 20][randInt(0, 2)];
+                    const tip = bill * tipPercent / 100;
+                    return {
+                        text: `Your restaurant bill is $${bill}. You want to leave a ${tipPercent}% tip. How much is the tip?`,
+                        answer: tip,
+                        unit: 'dollars',
+                        explanation: `$${bill} × ${tipPercent}% = $${tip}`
+                    };
+                },
+                () => {
+                    const total = randInt(20, 50);
+                    const correct = randInt(Math.floor(total * 0.6), total);
+                    const percent = Math.round(correct / total * 100);
+                    return {
+                        text: `On a test with ${total} questions, you got ${correct} correct. What percent did you get right?`,
+                        answer: percent,
+                        unit: '%',
+                        explanation: `${correct} ÷ ${total} × 100 = ${percent}%`
+                    };
+                },
+                () => {
+                    const original = randInt(50, 200);
+                    const increase = [10, 20, 25][randInt(0, 2)];
+                    const newPrice = original * (100 + increase) / 100;
+                    return {
+                        text: `A stock worth $${original} increases by ${increase}%. What's its new value?`,
+                        answer: newPrice,
+                        unit: 'dollars',
+                        explanation: `$${original} × ${100 + increase}% = $${original} × ${(100+increase)/100} = $${newPrice}`
+                    };
+                }
+            ],
+            ratio: [
+                () => {
+                    const ratio = randInt(2, 4);
+                    const small = randInt(3, 8);
+                    const large = small * ratio;
+                    return {
+                        text: `Red and blue marbles are in a ${ratio}:1 ratio. If there are ${small} blue marbles, how many red marbles are there?`,
+                        answer: large,
+                        unit: 'marbles',
+                        explanation: `${ratio} × ${small} = ${large} red marbles`
+                    };
+                },
+                () => {
+                    const cups = randInt(2, 4);
+                    const water = randInt(3, 6);
+                    const batches = randInt(2, 4);
+                    const totalWater = water * batches;
+                    return {
+                        text: `A recipe uses ${cups} cups flour and ${water} cups water. If you make ${batches} batches, how much water do you need?`,
+                        answer: totalWater,
+                        unit: 'cups',
+                        explanation: `${water} cups × ${batches} batches = ${totalWater} cups`
+                    };
+                },
+                () => {
+                    const boys = randInt(10, 20);
+                    const girls = randInt(10, 20);
+                    const total = boys + girls;
+                    return {
+                        text: `A class has ${boys} boys and ${girls} girls. What's the total number of students?`,
+                        answer: total,
+                        unit: 'students',
+                        explanation: `${boys} + ${girls} = ${total} students`
+                    };
+                },
+                () => {
+                    const scale = randInt(2, 5);
+                    const mapDist = randInt(3, 10);
+                    const realDist = mapDist * scale * 10;
+                    return {
+                        text: `On a map, 1 inch = ${scale * 10} miles. If two cities are ${mapDist} inches apart on the map, what's the real distance?`,
+                        answer: realDist,
+                        unit: 'miles',
+                        explanation: `${mapDist} inches × ${scale * 10} miles/inch = ${realDist} miles`
+                    };
+                }
+            ],
+            age: [
+                () => {
+                    const age = randInt(8, 15);
+                    const diff = randInt(20, 30);
+                    const parentAge = age + diff;
+                    return {
+                        text: `Sam is ${age} years old. His dad is ${diff} years older. How old is Sam's dad?`,
+                        answer: parentAge,
+                        unit: 'years old',
+                        explanation: `${age} + ${diff} = ${parentAge} years old`
+                    };
+                },
+                () => {
+                    const now = randInt(10, 20);
+                    const years = randInt(5, 15);
+                    const future = now + years;
+                    return {
+                        text: `Lisa is ${now} years old now. How old will she be in ${years} years?`,
+                        answer: future,
+                        unit: 'years old',
+                        explanation: `${now} + ${years} = ${future} years old`
+                    };
+                },
+                () => {
+                    const older = randInt(15, 25);
+                    const younger = randInt(8, older - 3);
+                    const diff = older - younger;
+                    return {
+                        text: `Alex is ${older} and his sister is ${younger}. How many years older is Alex?`,
+                        answer: diff,
+                        unit: 'years',
+                        explanation: `${older} - ${younger} = ${diff} years`
+                    };
+                },
+                () => {
+                    const current = randInt(25, 40);
+                    const yearsAgo = randInt(5, 15);
+                    const past = current - yearsAgo;
+                    return {
+                        text: `Ms. Johnson is ${current} years old. How old was she ${yearsAgo} years ago?`,
+                        answer: past,
+                        unit: 'years old',
+                        explanation: `${current} - ${yearsAgo} = ${past} years old`
+                    };
+                }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('checkBtn').style.display = 'inline-flex';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['money', 'distance', 'percent', 'ratio', 'age'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            const problems = PROBLEMS[actualTopic];
+            const generator = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem = generator();
+            currentProblem.topic = actualTopic;
+            
+            const badges = {
+                money: '💰 Money Problem',
+                distance: '🚗 Distance Problem',
+                percent: '📊 Percent Problem',
+                ratio: '⚖️ Ratio Problem',
+                age: '👥 Age Problem'
+            };
+            
+            document.getElementById('categoryBadge').textContent = badges[actualTopic];
+            document.getElementById('problemText').textContent = currentProblem.text;
+            document.getElementById('unitLabel').textContent = currentProblem.unit;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('answerInput').focus();
+            
+            updateProgressDots();
+        }
+        
+        function updateProgressDots() {
+            const container = document.getElementById('progressDots');
+            container.innerHTML = '';
+            for (let i = 0; i < totalProblems; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                if (i < results.length) {
+                    dot.classList.add(results[i] ? 'done' : 'wrong');
+                } else if (i === problemIndex) {
+                    dot.classList.add('current');
+                }
+                container.appendChild(dot);
+            }
+            document.getElementById('problemNum').textContent = `${problemIndex + 1}/${totalProblems}`;
+        }
+        
+        function checkAnswer() {
+            if (answered) return;
+            
+            const input = document.getElementById('answerInput').value.trim();
+            const userAnswer = parseFloat(input);
+            
+            if (isNaN(userAnswer)) {
+                document.getElementById('feedback').textContent = 'Please enter a number!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            answered = true;
+            const isCorrect = Math.abs(userAnswer - currentProblem.answer) < 0.01;
+            
+            results.push(isCorrect);
+            
+            if (isCorrect) {
+                correctCount++;
+                score += 100;
+                document.getElementById('feedback').textContent = `✓ Correct!`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                document.getElementById('feedback').textContent = `✗ Answer: ${currentProblem.answer} ${currentProblem.unit}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').textContent = '📐 ' + currentProblem.explanation;
+            document.getElementById('explanation').classList.add('visible');
+            
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            
+            if (problemIndex >= totalProblems - 1) {
+                document.getElementById('nextBtn').textContent = 'See Results →';
+            }
+            
+            updateUI();
+            updateProgressDots();
+        }
+        
+        function nextProblem() {
+            problemIndex++;
+            if (problemIndex >= totalProblems) {
+                endGame();
+            } else {
+                document.getElementById('nextBtn').textContent = 'Next Problem →';
+                generateProblem();
+            }
+        }
+        
+        function endGame() {
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { correct: correctCount, total: totalProblems, topic }
+            });
+        }
+        
+        function showWork() {
+            document.getElementById('explanation').classList.toggle('visible');
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        function startNewGame() {
+            score = 0;
+            correctCount = 0;
+            problemIndex = 0;
+            results = [];
+            updateUI();
+            generateProblem();
+        }
+        
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                if (answered) {
+                    nextProblem();
+                } else {
+                    checkAnswer();
+                }
+            }
+        });
+        
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('nextBtn').addEventListener('click', nextProblem);
+        document.getElementById('showWorkBtn').addEventListener('click', showWork);
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                startNewGame();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        startNewGame();
+    </script>
+</body>
+</html>

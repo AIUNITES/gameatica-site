@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Number Theory - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .numbers-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--white);
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        .question-text {
+            font-size: 1.2rem;
+            color: var(--gray-light);
+            margin-bottom: 20px;
+        }
+        .answer-input {
+            width: 150px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: var(--white);
+            font-family: 'Courier New', monospace;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .yes-no-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .yn-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+            background: var(--dark);
+            color: var(--white);
+            transition: all 0.2s;
+        }
+        .yn-btn:hover { border-color: var(--primary); }
+        .yn-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .yn-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .factor-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin: 15px 0;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .factor-chip {
+            padding: 8px 15px;
+            background: var(--dark);
+            border-radius: 20px;
+            font-size: 1rem;
+            color: var(--gray-light);
+        }
+        .factor-chip.prime { background: rgba(239, 68, 68, 0.2); color: var(--primary); }
+        .hint-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+        .reference-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: none;
+        }
+        .reference-card.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🔍 Number Theory</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="primes">Primes</button>
+            <button class="topic-btn" data-topic="factors">Factors</button>
+            <button class="topic-btn" data-topic="gcd">GCD</button>
+            <button class="topic-btn" data-topic="lcm">LCM</button>
+            <button class="topic-btn" data-topic="divisibility">Divisibility</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Prime Numbers</div>
+                <div class="numbers-display" id="numbersDisplay">17</div>
+                <div class="factor-grid" id="factorGrid"></div>
+                <div class="question-text" id="question">Is this number prime?</div>
+                <div id="answerArea">
+                    <div class="yes-no-buttons" id="ynButtons">
+                        <button class="yn-btn" data-answer="yes">Yes</button>
+                        <button class="yn-btn" data-answer="no">No</button>
+                    </div>
+                    <input type="text" class="answer-input" id="answerInput" placeholder="?" style="display:none;">
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-text" id="hintText"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="refBtn">📖 Reference</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="reference-card" id="referenceCard">
+            <strong>Quick Reference:</strong><br>
+            • <strong>Prime:</strong> Only divisible by 1 and itself (2, 3, 5, 7, 11, 13...)<br>
+            • <strong>Factors:</strong> Numbers that divide evenly into another<br>
+            • <strong>GCD:</strong> Greatest Common Divisor - largest shared factor<br>
+            • <strong>LCM:</strong> Least Common Multiple - smallest shared multiple<br>
+            • <strong>Divisibility:</strong> Even ÷2, ends in 0/5 ÷5, digit sum ÷3 or 9
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Primes:</strong> Identify prime numbers</li>
+                <li><strong>Factors:</strong> Find all factors of a number</li>
+                <li><strong>GCD:</strong> Greatest common divisor</li>
+                <li><strong>LCM:</strong> Least common multiple</li>
+                <li><strong>Divisibility:</strong> Quick divisibility tests</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'numbertheory';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let topic = 'primes';
+        let currentProblem = null;
+        let answered = false;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function isPrime(n) {
+            if (n < 2) return false;
+            if (n === 2) return true;
+            if (n % 2 === 0) return false;
+            for (let i = 3; i <= Math.sqrt(n); i += 2) {
+                if (n % i === 0) return false;
+            }
+            return true;
+        }
+        
+        function getFactors(n) {
+            const factors = [];
+            for (let i = 1; i <= n; i++) {
+                if (n % i === 0) factors.push(i);
+            }
+            return factors;
+        }
+        
+        function gcd(a, b) {
+            while (b) {
+                [a, b] = [b, a % b];
+            }
+            return a;
+        }
+        
+        function lcm(a, b) {
+            return (a * b) / gcd(a, b);
+        }
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('factorGrid').innerHTML = '';
+            document.getElementById('hintText').textContent = '';
+            
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['primes', 'factors', 'gcd', 'lcm', 'divisibility'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            currentProblem = { topic: actualTopic };
+            
+            switch (actualTopic) {
+                case 'primes':
+                    generatePrimeProblem();
+                    break;
+                case 'factors':
+                    generateFactorProblem();
+                    break;
+                case 'gcd':
+                    generateGCDProblem();
+                    break;
+                case 'lcm':
+                    generateLCMProblem();
+                    break;
+                case 'divisibility':
+                    generateDivisibilityProblem();
+                    break;
+            }
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function generatePrimeProblem() {
+            // Mix of primes and non-primes
+            let num;
+            if (Math.random() < 0.5) {
+                // Generate a prime
+                const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+                num = primes[Math.floor(Math.random() * primes.length)];
+                currentProblem.answer = 'yes';
+            } else {
+                // Generate a non-prime
+                do {
+                    num = randInt(4, 100);
+                } while (isPrime(num));
+                currentProblem.answer = 'no';
+            }
+            
+            currentProblem.num = num;
+            currentProblem.hint = isPrime(num) ? 
+                `${num} is only divisible by 1 and ${num}` : 
+                `${num} is divisible by ${getFactors(num).filter(f => f > 1 && f < num)[0]}`;
+            
+            document.getElementById('topicLabel').textContent = 'Prime Numbers';
+            document.getElementById('numbersDisplay').textContent = num;
+            document.getElementById('question').textContent = 'Is this number prime?';
+            showYNButtons();
+        }
+        
+        function generateFactorProblem() {
+            const num = randInt(12, 48);
+            const factors = getFactors(num);
+            currentProblem.num = num;
+            currentProblem.answer = factors.length;
+            currentProblem.factors = factors;
+            currentProblem.hint = `Try dividing by 1, 2, 3, 4... up to ${Math.floor(Math.sqrt(num))}`;
+            
+            document.getElementById('topicLabel').textContent = 'Factors';
+            document.getElementById('numbersDisplay').textContent = num;
+            document.getElementById('question').textContent = 'How many factors does this number have?';
+            showInput();
+        }
+        
+        function generateGCDProblem() {
+            const a = randInt(12, 60);
+            const b = randInt(12, 60);
+            const answer = gcd(a, b);
+            
+            currentProblem.a = a;
+            currentProblem.b = b;
+            currentProblem.answer = answer;
+            currentProblem.hint = `List factors of both: ${getFactors(a).join(', ')} and ${getFactors(b).join(', ')}`;
+            
+            document.getElementById('topicLabel').textContent = 'Greatest Common Divisor';
+            document.getElementById('numbersDisplay').textContent = `${a} and ${b}`;
+            document.getElementById('question').textContent = 'Find the GCD (greatest common divisor)';
+            showInput();
+        }
+        
+        function generateLCMProblem() {
+            const a = randInt(2, 12);
+            const b = randInt(2, 12);
+            const answer = lcm(a, b);
+            
+            currentProblem.a = a;
+            currentProblem.b = b;
+            currentProblem.answer = answer;
+            currentProblem.hint = `Multiples of ${a}: ${a}, ${a*2}, ${a*3}... Multiples of ${b}: ${b}, ${b*2}, ${b*3}...`;
+            
+            document.getElementById('topicLabel').textContent = 'Least Common Multiple';
+            document.getElementById('numbersDisplay').textContent = `${a} and ${b}`;
+            document.getElementById('question').textContent = 'Find the LCM (least common multiple)';
+            showInput();
+        }
+        
+        function generateDivisibilityProblem() {
+            const divisors = [2, 3, 4, 5, 6, 9, 10];
+            const divisor = divisors[Math.floor(Math.random() * divisors.length)];
+            
+            let num;
+            const isDivisible = Math.random() < 0.5;
+            
+            if (isDivisible) {
+                num = randInt(10, 50) * divisor;
+            } else {
+                do {
+                    num = randInt(100, 500);
+                } while (num % divisor === 0);
+            }
+            
+            currentProblem.num = num;
+            currentProblem.divisor = divisor;
+            currentProblem.answer = isDivisible ? 'yes' : 'no';
+            
+            const hints = {
+                2: 'Even numbers are divisible by 2',
+                3: 'Sum the digits - if sum is divisible by 3, so is the number',
+                4: 'Check if last 2 digits form a number divisible by 4',
+                5: 'Numbers ending in 0 or 5 are divisible by 5',
+                6: 'Must be divisible by both 2 and 3',
+                9: 'Sum the digits - if sum is divisible by 9, so is the number',
+                10: 'Numbers ending in 0 are divisible by 10'
+            };
+            currentProblem.hint = hints[divisor];
+            
+            document.getElementById('topicLabel').textContent = 'Divisibility';
+            document.getElementById('numbersDisplay').textContent = num;
+            document.getElementById('question').textContent = `Is ${num} divisible by ${divisor}?`;
+            showYNButtons();
+        }
+        
+        function showYNButtons() {
+            document.getElementById('ynButtons').style.display = 'flex';
+            document.getElementById('answerInput').style.display = 'none';
+            document.querySelectorAll('.yn-btn').forEach(btn => {
+                btn.classList.remove('correct', 'wrong');
+                btn.disabled = false;
+            });
+        }
+        
+        function showInput() {
+            document.getElementById('ynButtons').style.display = 'none';
+            document.getElementById('answerInput').style.display = 'block';
+            document.getElementById('answerInput').value = '';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function checkYNAnswer(answer, btn) {
+            if (answered) return;
+            answered = true;
+            
+            document.querySelectorAll('.yn-btn').forEach(b => b.disabled = true);
+            
+            if (answer === currentProblem.answer) {
+                btn.classList.add('correct');
+                handleCorrect();
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.yn-btn').forEach(b => {
+                    if (b.dataset.answer === currentProblem.answer) b.classList.add('correct');
+                });
+                handleWrong();
+            }
+        }
+        
+        function checkInputAnswer() {
+            if (answered) return;
+            
+            const input = document.getElementById('answerInput').value.trim();
+            const userAnswer = parseInt(input);
+            
+            if (isNaN(userAnswer)) {
+                document.getElementById('feedback').textContent = 'Please enter a number!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            answered = true;
+            
+            if (userAnswer === currentProblem.answer) {
+                handleCorrect();
+                // Show factors if it was a factor problem
+                if (currentProblem.factors) {
+                    showFactorGrid(currentProblem.factors);
+                }
+            } else {
+                handleWrong();
+                if (currentProblem.factors) {
+                    showFactorGrid(currentProblem.factors);
+                }
+            }
+        }
+        
+        function handleCorrect() {
+            correctCount++;
+            streak++;
+            maxStreak = Math.max(maxStreak, streak);
+            const points = 100 + streak * 15;
+            score += points;
+            
+            document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+            document.getElementById('feedback').className = 'feedback correct';
+            GameUtils.playSound('point');
+            
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function handleWrong() {
+            streak = 0;
+            let answerText = currentProblem.answer;
+            if (currentProblem.factors) {
+                answerText = `${currentProblem.answer} factors: ${currentProblem.factors.join(', ')}`;
+            }
+            document.getElementById('feedback').textContent = `✗ Answer: ${answerText}`;
+            document.getElementById('feedback').className = 'feedback wrong';
+            GameUtils.playSound('gameover');
+            
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showFactorGrid(factors) {
+            const grid = document.getElementById('factorGrid');
+            grid.innerHTML = factors.map(f => 
+                `<span class="factor-chip ${isPrime(f) && f > 1 ? 'prime' : ''}">${f}</span>`
+            ).join('');
+        }
+        
+        function showHint() {
+            document.getElementById('hintText').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.querySelectorAll('.yn-btn').forEach(btn => {
+            btn.addEventListener('click', () => checkYNAnswer(btn.dataset.answer, btn));
+        });
+        
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkInputAnswer();
+        });
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        document.getElementById('refBtn').addEventListener('click', () => {
+            document.getElementById('referenceCard').classList.toggle('visible');
+        });
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

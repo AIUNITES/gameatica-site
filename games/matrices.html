@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Matrix Math - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔲</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .matrix-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .matrix {
+            display: inline-flex;
+            flex-direction: column;
+            border-left: 3px solid var(--gray);
+            border-right: 3px solid var(--gray);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        .matrix-row {
+            display: flex;
+            gap: 15px;
+        }
+        .matrix-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+        .operator {
+            font-size: 2rem;
+            color: var(--primary);
+        }
+        .equals {
+            font-size: 2rem;
+            color: var(--gray);
+        }
+        .answer-matrix .matrix-cell {
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+        .answer-matrix input {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: var(--white);
+            text-align: center;
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+        }
+        .answer-matrix input:focus {
+            outline: none;
+        }
+        .vector {
+            display: inline-flex;
+            flex-direction: column;
+            border-left: 3px solid var(--gray);
+            border-right: 3px solid var(--gray);
+            padding: 5px 8px;
+            border-radius: 4px;
+        }
+        .vector-cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .question-text {
+            color: var(--gray-light);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        .scalar-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-right: 10px;
+        }
+        .hint-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 15px;
+        }
+        .reference-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: none;
+            text-align: left;
+        }
+        .reference-card.visible { display: block; }
+        @media (max-width: 500px) {
+            .matrix-cell { width: 35px; height: 35px; font-size: 1.1rem; }
+            .matrix-row { gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🔲 Matrix Math</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="addition">Addition</button>
+            <button class="topic-btn" data-topic="scalar">Scalar ×</button>
+            <button class="topic-btn" data-topic="vectors">Vectors</button>
+            <button class="topic-btn" data-topic="determinant">Determinant</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Matrix Addition</div>
+                <div class="question-text" id="question">Add the matrices</div>
+                <div class="matrix-container" id="matrixContainer">
+                    <!-- Matrices rendered here -->
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-text" id="hintText"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="refBtn">📖 Reference</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+        </div>
+
+        <div class="reference-card" id="referenceCard">
+            <strong>Matrix Operations:</strong><br><br>
+            • <strong>Addition:</strong> Add corresponding elements<br>
+            • <strong>Scalar ×:</strong> Multiply each element by the scalar<br>
+            • <strong>Vectors:</strong> Add/subtract component by component<br>
+            • <strong>2×2 Determinant:</strong> |a b; c d| = ad - bc
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Matrix Addition:</strong> Add 2×2 matrices</li>
+                <li><strong>Scalar Multiplication:</strong> Multiply matrix by number</li>
+                <li><strong>Vectors:</strong> Vector addition and subtraction</li>
+                <li><strong>Determinants:</strong> 2×2 matrix determinants</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'matrix';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let topic = 'addition';
+        let currentProblem = null;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function generateMatrix(rows, cols, min = -5, max = 9) {
+            return Array.from({length: rows}, () => 
+                Array.from({length: cols}, () => randInt(min, max))
+            );
+        }
+        
+        function generateVector(size, min = -5, max = 9) {
+            return Array.from({length: size}, () => randInt(min, max));
+        }
+        
+        function addMatrices(a, b) {
+            return a.map((row, i) => row.map((val, j) => val + b[i][j]));
+        }
+        
+        function scalarMultiply(scalar, matrix) {
+            return matrix.map(row => row.map(val => val * scalar));
+        }
+        
+        function determinant2x2(m) {
+            return m[0][0] * m[1][1] - m[0][1] * m[1][0];
+        }
+        
+        function generateProblem() {
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['addition', 'scalar', 'vectors', 'determinant'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            currentProblem = { topic: actualTopic };
+            
+            switch (actualTopic) {
+                case 'addition':
+                    generateAdditionProblem();
+                    break;
+                case 'scalar':
+                    generateScalarProblem();
+                    break;
+                case 'vectors':
+                    generateVectorProblem();
+                    break;
+                case 'determinant':
+                    generateDeterminantProblem();
+                    break;
+            }
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('hintText').textContent = '';
+        }
+        
+        function generateAdditionProblem() {
+            const a = generateMatrix(2, 2, 1, 9);
+            const b = generateMatrix(2, 2, 1, 9);
+            const answer = addMatrices(a, b);
+            
+            currentProblem.a = a;
+            currentProblem.b = b;
+            currentProblem.answer = answer;
+            currentProblem.hint = 'Add each cell: top-left + top-left, etc.';
+            
+            document.getElementById('topicLabel').textContent = 'Matrix Addition';
+            document.getElementById('question').textContent = 'Add the matrices';
+            
+            renderMatrixAddition(a, b);
+        }
+        
+        function generateScalarProblem() {
+            const scalar = randInt(2, 5);
+            const matrix = generateMatrix(2, 2, 1, 9);
+            const answer = scalarMultiply(scalar, matrix);
+            
+            currentProblem.scalar = scalar;
+            currentProblem.matrix = matrix;
+            currentProblem.answer = answer;
+            currentProblem.hint = `Multiply each element by ${scalar}`;
+            
+            document.getElementById('topicLabel').textContent = 'Scalar Multiplication';
+            document.getElementById('question').textContent = 'Multiply the matrix by the scalar';
+            
+            renderScalarMultiplication(scalar, matrix);
+        }
+        
+        function generateVectorProblem() {
+            const a = generateVector(3, 1, 9);
+            const b = generateVector(3, 1, 9);
+            const isAdd = Math.random() < 0.5;
+            const answer = isAdd ? 
+                a.map((v, i) => v + b[i]) : 
+                a.map((v, i) => v - b[i]);
+            
+            currentProblem.a = a;
+            currentProblem.b = b;
+            currentProblem.isAdd = isAdd;
+            currentProblem.answer = answer;
+            currentProblem.hint = isAdd ? 'Add component by component' : 'Subtract component by component';
+            
+            document.getElementById('topicLabel').textContent = 'Vector ' + (isAdd ? 'Addition' : 'Subtraction');
+            document.getElementById('question').textContent = (isAdd ? 'Add' : 'Subtract') + ' the vectors';
+            
+            renderVectorOperation(a, b, isAdd);
+        }
+        
+        function generateDeterminantProblem() {
+            const matrix = generateMatrix(2, 2, 1, 9);
+            const answer = determinant2x2(matrix);
+            
+            currentProblem.matrix = matrix;
+            currentProblem.answer = answer;
+            currentProblem.hint = `det = (${matrix[0][0]} × ${matrix[1][1]}) - (${matrix[0][1]} × ${matrix[1][0]})`;
+            
+            document.getElementById('topicLabel').textContent = '2×2 Determinant';
+            document.getElementById('question').textContent = 'Find the determinant';
+            
+            renderDeterminant(matrix);
+        }
+        
+        function renderMatrixAddition(a, b) {
+            const container = document.getElementById('matrixContainer');
+            container.innerHTML = `
+                ${renderMatrix(a)}
+                <span class="operator">+</span>
+                ${renderMatrix(b)}
+                <span class="equals">=</span>
+                ${renderAnswerMatrix(2, 2)}
+            `;
+            focusFirstInput();
+        }
+        
+        function renderScalarMultiplication(scalar, matrix) {
+            const container = document.getElementById('matrixContainer');
+            container.innerHTML = `
+                <span class="scalar-display">${scalar}</span>
+                <span class="operator">×</span>
+                ${renderMatrix(matrix)}
+                <span class="equals">=</span>
+                ${renderAnswerMatrix(2, 2)}
+            `;
+            focusFirstInput();
+        }
+        
+        function renderVectorOperation(a, b, isAdd) {
+            const container = document.getElementById('matrixContainer');
+            container.innerHTML = `
+                ${renderVector(a)}
+                <span class="operator">${isAdd ? '+' : '−'}</span>
+                ${renderVector(b)}
+                <span class="equals">=</span>
+                ${renderAnswerVector(3)}
+            `;
+            focusFirstInput();
+        }
+        
+        function renderDeterminant(matrix) {
+            const container = document.getElementById('matrixContainer');
+            container.innerHTML = `
+                <span style="font-size:1.5rem;">det</span>
+                ${renderMatrix(matrix)}
+                <span class="equals">=</span>
+                <input type="number" class="answer-input" id="detAnswer" placeholder="?" style="width:80px;">
+            `;
+            document.getElementById('detAnswer').focus();
+        }
+        
+        function renderMatrix(m) {
+            return `
+                <div class="matrix">
+                    ${m.map(row => `
+                        <div class="matrix-row">
+                            ${row.map(cell => `<div class="matrix-cell">${cell}</div>`).join('')}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        function renderVector(v) {
+            return `
+                <div class="vector">
+                    ${v.map(val => `<div class="vector-cell">${val}</div>`).join('')}
+                </div>
+            `;
+        }
+        
+        function renderAnswerMatrix(rows, cols) {
+            let html = '<div class="matrix answer-matrix">';
+            for (let r = 0; r < rows; r++) {
+                html += '<div class="matrix-row">';
+                for (let c = 0; c < cols; c++) {
+                    html += `<div class="matrix-cell"><input type="number" data-row="${r}" data-col="${c}"></div>`;
+                }
+                html += '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+        
+        function renderAnswerVector(size) {
+            let html = '<div class="vector answer-matrix">';
+            for (let i = 0; i < size; i++) {
+                html += `<div class="vector-cell"><input type="number" data-idx="${i}" style="width:35px;"></div>`;
+            }
+            html += '</div>';
+            return html;
+        }
+        
+        function focusFirstInput() {
+            setTimeout(() => {
+                const first = document.querySelector('.answer-matrix input, #detAnswer');
+                if (first) first.focus();
+            }, 100);
+        }
+        
+        function checkAnswer() {
+            let isCorrect = false;
+            
+            if (currentProblem.topic === 'determinant') {
+                const userAnswer = parseInt(document.getElementById('detAnswer').value);
+                isCorrect = userAnswer === currentProblem.answer;
+            } else if (currentProblem.topic === 'vectors') {
+                const inputs = document.querySelectorAll('.answer-matrix input');
+                const userAnswer = Array.from(inputs).map(inp => parseInt(inp.value) || 0);
+                isCorrect = JSON.stringify(userAnswer) === JSON.stringify(currentProblem.answer);
+            } else {
+                // Matrix answer
+                const inputs = document.querySelectorAll('.answer-matrix input');
+                const userMatrix = [[0,0],[0,0]];
+                inputs.forEach(inp => {
+                    const r = parseInt(inp.dataset.row);
+                    const c = parseInt(inp.dataset.col);
+                    userMatrix[r][c] = parseInt(inp.value) || 0;
+                });
+                isCorrect = JSON.stringify(userMatrix) === JSON.stringify(currentProblem.answer);
+            }
+            
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                const points = 100 + streak * 20;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateProblem, 1200);
+            } else {
+                streak = 0;
+                let ansText = '';
+                if (currentProblem.topic === 'determinant') {
+                    ansText = currentProblem.answer;
+                } else if (currentProblem.topic === 'vectors') {
+                    ansText = `[${currentProblem.answer.join(', ')}]`;
+                } else {
+                    ansText = currentProblem.answer.map(r => r.join(', ')).join(' | ');
+                }
+                document.getElementById('feedback').textContent = `✗ Answer: ${ansText}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2500);
+            }
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('hintText').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('refBtn').addEventListener('click', () => {
+            document.getElementById('referenceCard').classList.toggle('visible');
+        });
+        
+        // Enter key to check
+        document.getElementById('matrixContainer').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

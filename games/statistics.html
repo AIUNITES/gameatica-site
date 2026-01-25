@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Statistics Lab - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .data-display {
+            background: var(--dark);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        .data-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+        .data-set {
+            font-size: 1.5rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: var(--primary);
+            word-spacing: 8px;
+        }
+        .question-text {
+            font-size: 1.4rem;
+            margin: 20px 0;
+            color: var(--white);
+        }
+        .answer-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .answer-input {
+            width: 120px;
+            padding: 12px 15px;
+            font-size: 1.3rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            color: var(--white);
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .visual-bar {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 8px;
+            height: 100px;
+            margin: 20px auto;
+            max-width: 350px;
+        }
+        .bar {
+            width: 30px;
+            background: var(--gradient);
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+        }
+        .bar-label {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+        .probability-visual {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .prob-item {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .formula-ref {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: var(--gray);
+            display: none;
+        }
+        .formula-ref.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>📊 Statistics Lab</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="mean">Mean</button>
+            <button class="topic-btn" data-topic="median">Median</button>
+            <button class="topic-btn" data-topic="mode">Mode</button>
+            <button class="topic-btn" data-topic="range">Range</button>
+            <button class="topic-btn" data-topic="probability">Probability</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="data-display">
+                    <div class="data-label">Data Set:</div>
+                    <div class="data-set" id="dataSet">5, 8, 12, 8, 7</div>
+                </div>
+                <div class="visual-bar" id="visualBar"></div>
+                <div class="probability-visual" id="probVisual" style="display:none;"></div>
+                <div class="question-text" id="question">Find the mean (average)</div>
+                <div class="answer-section">
+                    <input type="text" class="answer-input" id="answerInput" placeholder="?" autofocus>
+                </div>
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="formulaBtn">📖 Formulas</button>
+            <button class="btn btn-secondary" id="skipBtn">⏭️ Skip</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+        </div>
+
+        <div class="formula-ref" id="formulaRef">
+            <strong>Formulas:</strong><br>
+            • Mean = Sum of values ÷ Number of values<br>
+            • Median = Middle value (when sorted)<br>
+            • Mode = Most frequent value<br>
+            • Range = Maximum - Minimum<br>
+            • Probability = Favorable outcomes ÷ Total outcomes
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>Mean:</strong> Calculate the average</li>
+                <li><strong>Median:</strong> Find the middle value</li>
+                <li><strong>Mode:</strong> Identify most common value</li>
+                <li><strong>Range:</strong> Find the spread</li>
+                <li><strong>Probability:</strong> Calculate chances</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'statistics';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let topic = 'mean';
+        let currentProblem = null;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        function generateDataSet(size, min, max) {
+            return Array.from({length: size}, () => randInt(min, max));
+        }
+        
+        function mean(arr) {
+            return arr.reduce((a, b) => a + b, 0) / arr.length;
+        }
+        
+        function median(arr) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+        
+        function mode(arr) {
+            const freq = {};
+            arr.forEach(n => freq[n] = (freq[n] || 0) + 1);
+            const maxFreq = Math.max(...Object.values(freq));
+            const modes = Object.keys(freq).filter(k => freq[k] === maxFreq).map(Number);
+            return modes;
+        }
+        
+        function range(arr) {
+            return Math.max(...arr) - Math.min(...arr);
+        }
+        
+        function generateProblem() {
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['mean', 'median', 'mode', 'range', 'probability'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            document.getElementById('probVisual').style.display = 'none';
+            document.getElementById('visualBar').style.display = 'flex';
+            
+            if (actualTopic === 'probability') {
+                generateProbabilityProblem();
+                return;
+            }
+            
+            // For mode, ensure there IS a mode
+            let data;
+            if (actualTopic === 'mode') {
+                data = generateDataSet(randInt(5, 7), 1, 10);
+                // Add a duplicate to ensure mode exists
+                const repeatVal = data[randInt(0, data.length - 1)];
+                data.push(repeatVal);
+            } else {
+                data = generateDataSet(randInt(5, 8), 1, 20);
+            }
+            
+            let answer, question;
+            
+            switch (actualTopic) {
+                case 'mean':
+                    answer = mean(data);
+                    question = 'Find the mean (average)';
+                    break;
+                case 'median':
+                    answer = median(data);
+                    question = 'Find the median (middle value)';
+                    break;
+                case 'mode':
+                    const modes = mode(data);
+                    answer = modes.length === 1 ? modes[0] : modes;
+                    question = 'Find the mode (most frequent)';
+                    break;
+                case 'range':
+                    answer = range(data);
+                    question = 'Find the range (max - min)';
+                    break;
+            }
+            
+            currentProblem = { data, answer, topic: actualTopic };
+            
+            document.getElementById('dataSet').textContent = data.join(', ');
+            document.getElementById('question').textContent = question;
+            renderBars(data);
+            
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function generateProbabilityProblem() {
+            document.getElementById('visualBar').style.display = 'none';
+            document.getElementById('probVisual').style.display = 'flex';
+            
+            const types = ['dice', 'cards', 'marbles', 'coins'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            let question, answer, visual;
+            
+            switch (type) {
+                case 'dice':
+                    const target = randInt(1, 6);
+                    question = `Rolling a die, what's P(${target})? (as fraction)`;
+                    answer = '1/6';
+                    visual = [1,2,3,4,5,6].map(n => `<div class="prob-item" style="background:${n===target?'var(--primary)':'var(--dark)'}">${'⚀⚁⚂⚃⚄⚅'[n-1]}</div>`).join('');
+                    break;
+                case 'coins':
+                    question = `Flipping a coin, what's P(heads)? (as fraction)`;
+                    answer = '1/2';
+                    visual = `<div class="prob-item" style="background:var(--primary)">🪙</div><div class="prob-item" style="background:var(--dark)">🪙</div>`;
+                    break;
+                case 'marbles':
+                    const red = randInt(2, 5);
+                    const blue = randInt(2, 5);
+                    const total = red + blue;
+                    question = `Bag has ${red} red, ${blue} blue marbles. P(red)? (as fraction)`;
+                    answer = simplifyFraction(red, total);
+                    visual = '🔴'.repeat(red) + '🔵'.repeat(blue);
+                    visual = visual.split('').map(m => `<div class="prob-item" style="background:var(--dark)">${m}</div>`).join('');
+                    break;
+                case 'cards':
+                    const suits = ['hearts', 'spades'];
+                    const suit = suits[Math.floor(Math.random() * suits.length)];
+                    question = `Drawing from a deck, what's P(${suit})? (as fraction)`;
+                    answer = '1/4';
+                    visual = '♥️♠️♦️♣️'.split('').map((s,i) => `<div class="prob-item" style="background:${i===(suit==='hearts'?0:1)?'var(--primary)':'var(--dark)'}">${s}</div>`).join('');
+                    break;
+            }
+            
+            currentProblem = { answer, topic: 'probability' };
+            
+            document.getElementById('dataSet').textContent = '';
+            document.getElementById('question').textContent = question;
+            document.getElementById('probVisual').innerHTML = visual;
+            
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function simplifyFraction(num, denom) {
+            const gcd = (a, b) => b ? gcd(b, a % b) : a;
+            const g = gcd(num, denom);
+            return `${num/g}/${denom/g}`;
+        }
+        
+        function renderBars(data) {
+            const max = Math.max(...data);
+            const container = document.getElementById('visualBar');
+            container.innerHTML = data.map(val => 
+                `<div><div class="bar" style="height:${(val/max)*80}px"></div><div class="bar-label">${val}</div></div>`
+            ).join('');
+        }
+        
+        function checkAnswer() {
+            const input = document.getElementById('answerInput').value.trim();
+            let userAnswer = input;
+            let isCorrect = false;
+            
+            if (currentProblem.topic === 'probability') {
+                // Compare fractions
+                isCorrect = input === currentProblem.answer || 
+                           normalizeFraction(input) === normalizeFraction(currentProblem.answer);
+            } else if (currentProblem.topic === 'mode' && Array.isArray(currentProblem.answer)) {
+                // Multiple modes
+                const userModes = input.split(',').map(n => parseInt(n.trim())).sort((a,b) => a-b);
+                const correctModes = [...currentProblem.answer].sort((a,b) => a-b);
+                isCorrect = JSON.stringify(userModes) === JSON.stringify(correctModes);
+            } else {
+                const numAnswer = parseFloat(input);
+                const correct = currentProblem.answer;
+                isCorrect = Math.abs(numAnswer - correct) < 0.01 || 
+                           numAnswer === Math.round(correct * 100) / 100;
+            }
+            
+            if (isCorrect) {
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateProblem, 1200);
+            } else {
+                streak = 0;
+                const ans = Array.isArray(currentProblem.answer) ? currentProblem.answer.join(', ') : currentProblem.answer;
+                document.getElementById('feedback').textContent = `✗ Answer: ${ans}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function normalizeFraction(frac) {
+            const parts = frac.split('/').map(n => parseInt(n.trim()));
+            if (parts.length !== 2) return frac;
+            const gcd = (a, b) => b ? gcd(b, a % b) : a;
+            const g = gcd(parts[0], parts[1]);
+            return `${parts[0]/g}/${parts[1]/g}`;
+        }
+        
+        function skipProblem() {
+            const ans = Array.isArray(currentProblem.answer) ? currentProblem.answer.join(', ') : currentProblem.answer;
+            document.getElementById('feedback').textContent = `Answer: ${ans}`;
+            streak = 0;
+            updateUI();
+            setTimeout(generateProblem, 1500);
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('skipBtn').addEventListener('click', skipProblem);
+        document.getElementById('formulaBtn').addEventListener('click', () => {
+            document.getElementById('formulaRef').classList.toggle('visible');
+        });
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pre-Algebra Pro - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔢</text></svg>">
+    <style>
+        .problem-display {
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .topic-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+        .expression {
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: var(--white);
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        .expression sup { font-size: 0.6em; vertical-align: super; }
+        .answer-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .answer-input {
+            width: 150px;
+            padding: 15px 20px;
+            font-size: 1.5rem;
+            text-align: center;
+            background: var(--dark);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            color: var(--white);
+            font-family: 'Courier New', monospace;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            min-height: 30px;
+        }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .hint-text {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 15px;
+            min-height: 25px;
+        }
+        .topic-tabs {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .topic-btn {
+            padding: 8px 14px;
+            background: var(--dark-card);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+        .topic-btn:hover { border-color: var(--primary); color: var(--white); }
+        .topic-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .pemdas-guide {
+            background: rgba(255,255,255,0.03);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+        .pemdas-guide.visible { display: block; }
+        .pemdas-guide h4 { color: var(--gray-light); margin-bottom: 10px; font-size: 0.9rem; }
+        .pemdas-steps {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+        .pemdas-step {
+            background: var(--dark);
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .pemdas-step strong { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🔢 Pre-Algebra Pro</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Correct</div>
+                <div class="value" id="correct">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Streak</div>
+                <div class="value" id="streak">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="topic-tabs">
+            <button class="topic-btn active" data-topic="pemdas">PEMDAS</button>
+            <button class="topic-btn" data-topic="exponents">Exponents</button>
+            <button class="topic-btn" data-topic="roots">Roots</button>
+            <button class="topic-btn" data-topic="negatives">Negatives</button>
+            <button class="topic-btn" data-topic="absolute">Absolute Value</button>
+            <button class="topic-btn" data-topic="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="topic-label" id="topicLabel">Order of Operations</div>
+                <div class="expression" id="expression">3 + 4 × 2</div>
+                <div class="answer-section">
+                    <span style="font-size:1.5rem;">=</span>
+                    <input type="text" class="answer-input" id="answerInput" placeholder="?" autofocus>
+                </div>
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-text" id="hintText"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-secondary" id="guideBtn">📖 PEMDAS</button>
+            <button class="btn btn-primary" id="checkBtn">Check Answer</button>
+        </div>
+
+        <div class="pemdas-guide" id="pemdasGuide">
+            <h4>Order of Operations (PEMDAS)</h4>
+            <div class="pemdas-steps">
+                <div class="pemdas-step"><strong>P</strong>arentheses</div>
+                <div class="pemdas-step"><strong>E</strong>xponents</div>
+                <div class="pemdas-step"><strong>M</strong>ultiply</div>
+                <div class="pemdas-step"><strong>D</strong>ivide</div>
+                <div class="pemdas-step"><strong>A</strong>dd</div>
+                <div class="pemdas-step"><strong>S</strong>ubtract</div>
+            </div>
+            <p style="color:var(--gray);font-size:0.8rem;margin-top:10px;text-align:center;">
+                M/D and A/S work left to right at same level
+            </p>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>Topics Covered</h3>
+            <ul>
+                <li><strong>PEMDAS:</strong> Order of operations</li>
+                <li><strong>Exponents:</strong> Powers and squares</li>
+                <li><strong>Roots:</strong> Square and cube roots</li>
+                <li><strong>Negatives:</strong> Operations with negative numbers</li>
+                <li><strong>Absolute Value:</strong> Distance from zero</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'prealgebra';
+        
+        let score = 0;
+        let correctCount = 0;
+        let streak = 0;
+        let maxStreak = 0;
+        let topic = 'pemdas';
+        let currentProblem = null;
+        
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        
+        const PROBLEMS = {
+            pemdas: [
+                () => {
+                    const a = randInt(2, 10), b = randInt(2, 8), c = randInt(1, 10);
+                    return { expr: `${a} + ${b} × ${c}`, answer: a + b * c, hint: 'Multiply first, then add' };
+                },
+                () => {
+                    const a = randInt(10, 30), b = randInt(2, 5), c = randInt(1, 5);
+                    return { expr: `${a} - ${b} × ${c}`, answer: a - b * c, hint: 'Multiply first, then subtract' };
+                },
+                () => {
+                    const a = randInt(2, 6), b = randInt(2, 6), c = randInt(1, 5);
+                    return { expr: `(${a} + ${b}) × ${c}`, answer: (a + b) * c, hint: 'Parentheses first!' };
+                },
+                () => {
+                    const a = randInt(2, 8), b = randInt(2, 4), c = randInt(1, 5), d = randInt(1, 5);
+                    return { expr: `${a} + ${b} × ${c} - ${d}`, answer: a + b * c - d, hint: 'Multiply first, then add/subtract left to right' };
+                },
+                () => {
+                    const a = randInt(10, 30), b = randInt(2, 5), c = randInt(2, 5);
+                    return { expr: `${a} ÷ ${b} + ${c}`, answer: a / b + c, hint: 'Divide first, then add' };
+                },
+                () => {
+                    const a = randInt(2, 5), b = randInt(2, 5), c = randInt(2, 5);
+                    const inner = a + b;
+                    return { expr: `${c} × (${a} + ${b})`, answer: c * inner, hint: 'Solve parentheses first' };
+                },
+                () => {
+                    const a = randInt(2, 4), b = randInt(2, 4), c = randInt(2, 4);
+                    return { expr: `${a}² + ${b} × ${c}`, answer: a*a + b * c, hint: 'Exponent first, then multiply, then add' };
+                }
+            ],
+            exponents: [
+                () => {
+                    const a = randInt(2, 10);
+                    return { expr: `${a}²`, answer: a * a, hint: `${a} × ${a}` };
+                },
+                () => {
+                    const a = randInt(2, 5);
+                    return { expr: `${a}³`, answer: a * a * a, hint: `${a} × ${a} × ${a}` };
+                },
+                () => {
+                    const a = randInt(2, 10);
+                    return { expr: `${a}¹`, answer: a, hint: 'Any number to the 1st power is itself' };
+                },
+                () => {
+                    const a = randInt(2, 10);
+                    return { expr: `${a}⁰`, answer: 1, hint: 'Any number to the 0 power is 1' };
+                },
+                () => {
+                    const a = randInt(2, 5), b = randInt(2, 5);
+                    return { expr: `${a}² + ${b}²`, answer: a*a + b*b, hint: 'Calculate each square, then add' };
+                },
+                () => {
+                    const a = randInt(2, 4), b = randInt(1, 3);
+                    return { expr: `(${a} × ${b})²`, answer: (a * b) * (a * b), hint: 'Multiply inside first, then square' };
+                },
+                () => {
+                    return { expr: `2⁴`, answer: 16, hint: '2 × 2 × 2 × 2' };
+                },
+                () => {
+                    return { expr: `10²`, answer: 100, hint: '10 × 10' };
+                }
+            ],
+            roots: [
+                () => {
+                    const vals = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100];
+                    const n = vals[Math.floor(Math.random() * vals.length)];
+                    return { expr: `√${n}`, answer: Math.sqrt(n), hint: 'What number times itself equals ' + n + '?' };
+                },
+                () => {
+                    const vals = [8, 27, 64, 125];
+                    const n = vals[Math.floor(Math.random() * vals.length)];
+                    return { expr: `³√${n}`, answer: Math.round(Math.cbrt(n)), hint: 'What number cubed equals ' + n + '?' };
+                },
+                () => {
+                    const a = randInt(2, 6);
+                    const sq = a * a;
+                    return { expr: `√${sq} + ${a}`, answer: a + a, hint: `√${sq} = ${a}` };
+                },
+                () => {
+                    const vals = [4, 9, 16, 25];
+                    const n = vals[Math.floor(Math.random() * vals.length)];
+                    const b = randInt(1, 5);
+                    return { expr: `√${n} × ${b}`, answer: Math.sqrt(n) * b, hint: 'Find the root first, then multiply' };
+                },
+                () => {
+                    return { expr: `√144`, answer: 12, hint: '12 × 12 = 144' };
+                },
+                () => {
+                    const a = randInt(2, 5);
+                    return { expr: `√(${a}²)`, answer: a, hint: 'Square root and square cancel out' };
+                }
+            ],
+            negatives: [
+                () => {
+                    const a = randInt(1, 10), b = randInt(1, 10);
+                    return { expr: `-${a} + ${b}`, answer: -a + b, hint: 'Start at -' + a + ', move right ' + b };
+                },
+                () => {
+                    const a = randInt(1, 10), b = randInt(1, 10);
+                    return { expr: `-${a} - ${b}`, answer: -a - b, hint: 'Both negative, add and keep negative' };
+                },
+                () => {
+                    const a = randInt(2, 8), b = randInt(2, 8);
+                    return { expr: `-${a} × ${b}`, answer: -a * b, hint: 'Negative × positive = negative' };
+                },
+                () => {
+                    const a = randInt(2, 8), b = randInt(2, 8);
+                    return { expr: `-${a} × -${b}`, answer: a * b, hint: 'Negative × negative = positive!' };
+                },
+                () => {
+                    const a = randInt(2, 10), b = randInt(2, 10);
+                    return { expr: `${a} - ${a + b}`, answer: -b, hint: 'Subtracting a larger number gives negative' };
+                },
+                () => {
+                    const a = randInt(2, 6), b = randInt(2, 6);
+                    return { expr: `(-${a})²`, answer: a * a, hint: 'Squaring a negative gives positive' };
+                },
+                () => {
+                    const a = randInt(10, 20), b = randInt(1, a);
+                    return { expr: `-${a} + ${b}`, answer: -a + b, hint: 'Add ' + b + ' to -' + a };
+                }
+            ],
+            absolute: [
+                () => {
+                    const a = randInt(1, 20);
+                    return { expr: `|${a}|`, answer: a, hint: 'Distance from 0 (positive)' };
+                },
+                () => {
+                    const a = randInt(1, 20);
+                    return { expr: `|-${a}|`, answer: a, hint: 'Distance from 0 is always positive' };
+                },
+                () => {
+                    const a = randInt(5, 15), b = randInt(1, a - 1);
+                    return { expr: `|${b} - ${a}|`, answer: a - b, hint: `${b} - ${a} = ${b-a}, absolute value = ${a-b}` };
+                },
+                () => {
+                    const a = randInt(2, 10), b = randInt(2, 10);
+                    return { expr: `|-${a}| + |-${b}|`, answer: a + b, hint: 'Each absolute value is positive' };
+                },
+                () => {
+                    const a = randInt(3, 10), b = randInt(1, 5);
+                    return { expr: `|${a}| - |${b}|`, answer: a - b, hint: 'Both are already positive' };
+                },
+                () => {
+                    const a = randInt(2, 8), b = randInt(2, 8);
+                    return { expr: `|-${a} × ${b}|`, answer: a * b, hint: 'Calculate inside first, then take absolute value' };
+                }
+            ]
+        };
+        
+        function generateProblem() {
+            let actualTopic = topic;
+            if (topic === 'mixed') {
+                const topics = ['pemdas', 'exponents', 'roots', 'negatives', 'absolute'];
+                actualTopic = topics[Math.floor(Math.random() * topics.length)];
+            }
+            
+            const problems = PROBLEMS[actualTopic];
+            const generator = problems[Math.floor(Math.random() * problems.length)];
+            currentProblem = generator();
+            currentProblem.topic = actualTopic;
+            
+            const labels = {
+                pemdas: 'Order of Operations',
+                exponents: 'Exponents',
+                roots: 'Roots',
+                negatives: 'Negative Numbers',
+                absolute: 'Absolute Value'
+            };
+            
+            document.getElementById('topicLabel').textContent = labels[actualTopic];
+            document.getElementById('expression').innerHTML = currentProblem.expr;
+            document.getElementById('answerInput').value = '';
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+            document.getElementById('hintText').textContent = '';
+            document.getElementById('answerInput').focus();
+        }
+        
+        function checkAnswer() {
+            const input = document.getElementById('answerInput').value.trim();
+            const userAnswer = parseFloat(input);
+            
+            if (isNaN(userAnswer)) {
+                document.getElementById('feedback').textContent = 'Please enter a number!';
+                document.getElementById('feedback').className = 'feedback wrong';
+                return;
+            }
+            
+            if (Math.abs(userAnswer - currentProblem.answer) < 0.01) {
+                correctCount++;
+                streak++;
+                maxStreak = Math.max(maxStreak, streak);
+                const points = 100 + streak * 15;
+                score += points;
+                
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+                
+                setTimeout(generateProblem, 1000);
+            } else {
+                streak = 0;
+                document.getElementById('feedback').textContent = `✗ Answer: ${currentProblem.answer}`;
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+                
+                setTimeout(generateProblem, 2000);
+            }
+            
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('hintText').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        // Event listeners
+        document.getElementById('answerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkAnswer();
+        });
+        
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('guideBtn').addEventListener('click', () => {
+            document.getElementById('pemdasGuide').classList.toggle('visible');
+        });
+        
+        document.querySelectorAll('.topic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.topic-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                topic = btn.dataset.topic;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        // Initialize
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

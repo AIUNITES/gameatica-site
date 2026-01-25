@@ -281,6 +281,75 @@
 | Refuel/repair at stations | ✅ |
 | Hyperspace travel animation | ✅ |
 
+### 🔤 Algebra Quest
+| Feature | Status |
+|---------|--------|
+| Easy/Medium/Hard/Expert levels | ✅ |
+| Linear equations | ✅ |
+| Quadratic equations | ✅ |
+| Distributive property | ✅ |
+| Variables on both sides | ✅ |
+| Hint system | ✅ |
+| Streak bonus | ✅ |
+
+### ∫ Calculus Challenge
+| Feature | Status |
+|---------|--------|
+| Derivatives topic | ✅ |
+| Integrals topic | ✅ |
+| Limits topic | ✅ |
+| Mixed mode | ✅ |
+| Multiple choice answers | ✅ |
+| Explanations | ✅ |
+| 10 problems per round | ✅ |
+
+### 📐 Trig Master
+| Feature | Status |
+|---------|--------|
+| Unit circle visualization | ✅ |
+| Animated angle display | ✅ |
+| Sin/cos/tan values | ✅ |
+| Trig identities | ✅ |
+| Equation solving | ✅ |
+| Reference card | ✅ |
+
+### ⚡ Math Speed
+| Feature | Status |
+|---------|--------|
+| Addition mode | ✅ |
+| Subtraction mode | ✅ |
+| Multiplication mode | ✅ |
+| Division mode | ✅ |
+| Mixed mode | ✅ |
+| 60-second timer | ✅ |
+| Combo bonus system | ✅ |
+| Speed bonus | ✅ |
+| Average time tracking | ✅ |
+
+### 📏 Geometry Pro
+| Feature | Status |
+|---------|--------|
+| Area calculations | ✅ |
+| Perimeter calculations | ✅ |
+| Volume calculations | ✅ |
+| Angle problems | ✅ |
+| SVG shape visualization | ✅ |
+| Formula reference card | ✅ |
+| Multiple shapes | ✅ |
+
+### 🥧 Fraction Frenzy
+| Feature | Status |
+|---------|--------|
+| Addition mode | ✅ |
+| Subtraction mode | ✅ |
+| Multiplication mode | ✅ |
+| Division mode | ✅ |
+| Simplify mode | ✅ |
+| Mixed mode | ✅ |
+| Visual fraction display | ✅ |
+| Must simplify answers | ✅ |
+| Hint system | ✅ |
+
 ---
 
 ## localStorage Keys
