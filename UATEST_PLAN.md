@@ -49,6 +49,10 @@
 | Matrix Math | games/matrices.html | Matrices and vectors | ✅ |
 | Word Problems | games/wordproblems.html | Real-world math problems | ✅ |
 | Math Facts Drill | games/mathfacts.html | Multiplication mastery | ✅ |
+| Grammar Galaxy | games/grammar.html | Grammar & parts of speech | ✅ |
+| Spelling Bee | games/spelling.html | Spelling with audio | ✅ |
+| Punctuation Pro | games/punctuation.html | Punctuation rules | ✅ |
+| Literary Legends | games/literature.html | Literature knowledge | ✅ |
 
 ---
 
@@ -57,8 +61,8 @@
 ### 🎮 Arcade Hub (index.html)
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Game grid display | ✅ | 31 games with icons |
-| Category filters | ✅ | All/Arcade/Puzzle/Skill/Word/Strategy/Math |
+| Game grid display | ✅ | 35 games with icons |
+| Category filters | ✅ | All/Arcade/Puzzle/Skill/Word/Strategy/Math/English |
 | Player name system | ✅ | Stored in localStorage |
 | Play count stats | ✅ | Tracks total plays |
 | AIUNITES Webring | ✅ | Top navigation bar |
@@ -363,6 +367,52 @@
 | Mastery grid visualization | ✅ |
 | Speed and accuracy stats | ✅ |
 | Auto-submit on correct | ✅ |
+
+### 📖 Grammar Galaxy
+| Feature | Status |
+|---------|--------|
+| Parts of speech identification | ✅ |
+| Subject-verb agreement | ✅ |
+| Verb tense selection | ✅ |
+| Sentence type identification | ✅ |
+| Sentence fragments/run-ons | ✅ |
+| Explanation system | ✅ |
+| Topic selector tabs | ✅ |
+| Hint system | ✅ |
+
+### 🐝 Spelling Bee
+| Feature | Status |
+|---------|--------|
+| Easy/Medium/Hard words | ✅ |
+| Text-to-speech pronunciation | ✅ |
+| Definition display | ✅ |
+| Letter reveal hints | ✅ |
+| Letter boxes visualization | ✅ |
+| Hint penalty system | ✅ |
+| Skip option | ✅ |
+| Streak bonus scoring | ✅ |
+
+### ✏️ Punctuation Pro
+| Feature | Status |
+|---------|--------|
+| Comma rules | ✅ |
+| Apostrophe usage | ✅ |
+| Quotation marks | ✅ |
+| End marks (. ? !) | ✅ |
+| Visual punctuation buttons | ✅ |
+| Rule reference card | ✅ |
+| Explanation system | ✅ |
+
+### 📚 Literary Legends
+| Feature | Status |
+|---------|--------|
+| Literary devices (simile, metaphor, etc.) | ✅ |
+| Authors & famous works | ✅ |
+| Genre identification | ✅ |
+| Literary terms (protagonist, theme, etc.) | ✅ |
+| Quote/example display | ✅ |
+| Explanation system | ✅ |
+| Hint system | ✅ |
 | Streak bonus | ✅ |
 
 ### ∫ Calculus Challenge
@@ -440,7 +490,7 @@
 ## Test Scenarios
 
 ### Hub Tests
-- [ ] All 31 game cards display correctly
+- [ ] All 35 game cards display correctly
 - [ ] Category filter buttons work
 - [ ] Player name changes and persists
 - [ ] Play count updates after playing games
@@ -502,6 +552,7 @@
 | 2.1.0 | Jan 25, 2026 | Added Star Trader (19 games total) |
 | 2.2.0 | Jan 25, 2026 | Added 6 Math Learning Games (25 games total) |
 | 2.3.0 | Jan 25, 2026 | Added 6 more Math Games (31 games total) |
+| 2.4.0 | Jan 25, 2026 | Added 4 English/LA Games (35 games total) |
 
 ---
 

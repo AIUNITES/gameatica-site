@@ -1,38 +1,73 @@
 /**
  * Gameatica - Shared Game Utilities
  * Leaderboards, score management, and common game functions
+ * Integrated with Auth system
  */
 
 const GameUtils = {
     // Storage prefix for all games
     prefix: 'gameatica_',
     
-    // Get player name (prompt if not set)
+    // Get current player name (from Auth or localStorage)
     getPlayerName() {
+        // First check if user is logged in via Auth
+        if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+            const user = Auth.getCurrentUser();
+            return user.displayName || user.username;
+        }
+        // Fall back to localStorage player name
         let name = localStorage.getItem(this.prefix + 'playerName');
         if (!name) {
-            name = prompt('Enter your player name:', 'Player') || 'Anonymous';
+            name = 'Guest';
             localStorage.setItem(this.prefix + 'playerName', name);
         }
         return name;
     },
     
-    // Set player name
+    // Get current username
+    getUsername() {
+        if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+            return Auth.getCurrentUser().username;
+        }
+        return null;
+    },
+    
+    // Check if user is logged in
+    isLoggedIn() {
+        return typeof Auth !== 'undefined' && Auth.isLoggedIn();
+    },
+    
+    // Set player name (for guests)
     setPlayerName(name) {
         localStorage.setItem(this.prefix + 'playerName', name);
     },
     
-    // Get local high scores for a game
+    // Get high scores for a game (from Storage if available, else localStorage)
     getHighScores(gameId, limit = 10) {
+        // Use Storage module if available
+        if (typeof Storage !== 'undefined' && Storage.getTopScores) {
+            return Storage.getTopScores(gameId, limit);
+        }
+        // Fall back to localStorage
         const scores = JSON.parse(localStorage.getItem(this.prefix + gameId + '_scores') || '[]');
         return scores.sort((a, b) => b.score - a.score).slice(0, limit);
     },
     
-    // Save a high score locally
+    // Save a high score
     saveHighScore(gameId, score, extraData = {}) {
-        const scores = this.getHighScores(gameId, 100);
+        const playerName = this.getPlayerName();
+        
+        // If logged in, use Storage module
+        if (this.isLoggedIn() && typeof Storage !== 'undefined') {
+            Storage.submitScore(gameId, score, extraData);
+        }
+        
+        // Also save to localStorage for local leaderboard
+        const scores = JSON.parse(localStorage.getItem(this.prefix + gameId + '_scores') || '[]');
         const entry = {
-            name: this.getPlayerName(),
+            name: playerName,
+            displayName: playerName,
+            username: this.getUsername() || 'guest',
             score: score,
             date: new Date().toISOString(),
             ...extraData
@@ -52,8 +87,8 @@ const GameUtils = {
         if (typeof CloudDB !== 'undefined' && CloudDB.isEnabled()) {
             try {
                 await CloudDB.submit('SCORE', {
-                    username: scoreData.name,
-                    displayName: scoreData.name,
+                    username: scoreData.username || scoreData.name,
+                    displayName: scoreData.displayName || scoreData.name,
                     score: scoreData.score,
                     correct: scoreData.correct || 0,
                     wrong: scoreData.wrong || 0,
@@ -70,10 +105,18 @@ const GameUtils = {
     
     // Get personal best for a game
     getPersonalBest(gameId) {
+        const username = this.getUsername();
+        
+        // If logged in, check Storage
+        if (username && typeof Storage !== 'undefined') {
+            return Storage.getUserBestScore(gameId, username);
+        }
+        
+        // Fall back to localStorage
         const name = this.getPlayerName();
-        const scores = this.getHighScores(gameId, 100);
-        const personal = scores.filter(s => s.name === name);
-        return personal.length > 0 ? personal[0].score : 0;
+        const scores = JSON.parse(localStorage.getItem(this.prefix + gameId + '_scores') || '[]');
+        const personal = scores.filter(s => s.name === name || s.username === username);
+        return personal.length > 0 ? Math.max(...personal.map(s => s.score)) : 0;
     },
     
     // Format time (seconds to MM:SS)
@@ -97,9 +140,15 @@ const GameUtils = {
         
         const scores = this.getHighScores(gameId, 10);
         const playerName = this.getPlayerName();
+        const username = this.getUsername();
         
         if (scores.length === 0) {
-            container.innerHTML = '<p style="color:#888;text-align:center;padding:20px;">No scores yet. Be the first!</p>';
+            container.innerHTML = `
+                <p style="color:#888;text-align:center;padding:20px;">
+                    No scores yet. Be the first!
+                    ${!this.isLoggedIn() ? '<br><a href="../index.html" style="color:var(--primary);">Login to save scores</a>' : ''}
+                </p>
+            `;
             return;
         }
         
@@ -107,18 +156,25 @@ const GameUtils = {
         let html = '<div class="leaderboard-list">';
         
         scores.forEach((score, i) => {
-            const isPlayer = score.name === playerName;
+            const isPlayer = score.name === playerName || score.username === username;
             const medal = medals[i] || `#${i + 1}`;
+            const displayName = score.displayName || score.name;
             html += `
                 <div class="leaderboard-entry ${isPlayer ? 'is-player' : ''}">
                     <span class="rank">${medal}</span>
-                    <span class="name">${score.name}</span>
+                    <span class="name">${displayName}</span>
                     <span class="score">${this.formatNumber(score.score)}</span>
                 </div>
             `;
         });
         
         html += '</div>';
+        
+        // Add login prompt if not logged in
+        if (!this.isLoggedIn()) {
+            html += '<p style="color:#888;font-size:0.8rem;text-align:center;margin-top:10px;"><a href="../index.html" style="color:var(--primary);">Login</a> to save your scores!</p>';
+        }
+        
         container.innerHTML = html;
     },
     
@@ -139,6 +195,7 @@ const GameUtils = {
                 <div class="final-score">${this.formatNumber(score)}</div>
                 ${isNewRecord ? '<p class="new-record">You beat your personal best!</p>' : ''}
                 <p class="personal-best">Personal Best: ${this.formatNumber(Math.max(score, personalBest))}</p>
+                ${!this.isLoggedIn() ? '<p class="login-prompt" style="color:#888;font-size:0.9rem;"><a href="../index.html" style="color:var(--primary);">Login</a> to save to global leaderboard!</p>' : ''}
                 <div class="game-over-buttons">
                     <button onclick="location.reload()" class="btn btn-primary">Play Again</button>
                     <a href="../index.html" class="btn btn-secondary">Back to Arcade</a>
