@@ -146,12 +146,54 @@
         .danger { color: #ef4444 !important; }
         .optional { color: var(--gray); font-size: 0.8rem; }
         
+        /* Data Sources Tab Styles */
+        .datasource-status { display: flex; align-items: center; gap: 10px; padding: 15px; background: var(--dark); border-radius: 10px; margin-bottom: 20px; }
+        .status-label { color: var(--gray); font-size: 0.9rem; }
+        .status-value { color: white; font-weight: 600; }
+        .status-indicator { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; }
+        .status-indicator.connected { background: #22c55e; }
+        .datasource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+        .datasource-card { background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; transition: all 0.2s; }
+        .datasource-card:hover { border-color: rgba(255,255,255,0.2); }
+        .datasource-card.active { border-color: var(--primary); }
+        .datasource-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+        .datasource-icon { font-size: 1.5rem; }
+        .datasource-title h4 { margin: 0 0 4px; font-size: 1rem; }
+        .datasource-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; }
+        .datasource-badge.default { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .datasource-badge.cloud { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .datasource-desc { color: var(--gray-light); font-size: 0.85rem; margin-bottom: 12px; line-height: 1.4; }
+        .datasource-features { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+        .datasource-features .feature { font-size: 0.75rem; color: var(--gray); }
+        
+        /* SQL Database Tab Styles */
+        .db-location-section { margin-bottom: 20px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .section-header h4 { margin: 0; }
+        .db-location-status { background: var(--primary); color: white; padding: 4px 12px; border-radius: 15px; font-size: 0.8rem; }
+        .db-location-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+        .db-location-card { background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 8px; transition: all 0.2s; }
+        .db-location-card:hover { border-color: rgba(255,255,255,0.2); }
+        .db-location-card.active { border-color: var(--primary); background: rgba(239,68,68,0.1); }
+        .db-loc-icon { font-size: 1.5rem; }
+        .db-loc-info h5 { margin: 0; font-size: 0.9rem; }
+        .db-loc-info p { margin: 0; font-size: 0.75rem; color: var(--gray); line-height: 1.3; }
+        .db-loc-badge { background: var(--primary); color: white; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; align-self: flex-start; }
+        .btn-tiny { padding: 4px 10px; font-size: 0.75rem; background: rgba(255,255,255,0.1); border: none; border-radius: 6px; color: white; cursor: pointer; }
+        .btn-tiny:hover { background: rgba(255,255,255,0.2); }
+        .sql-status-bar { display: flex; align-items: center; gap: 10px; padding: 12px 15px; background: var(--dark); border-radius: 8px; margin-bottom: 15px; }
+        .sql-status-icon { font-size: 1rem; }
+        .db-info-note { color: var(--gray); font-size: 0.85rem; margin-bottom: 15px; }
+        .db-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        
         @media (max-width: 768px) {
             .stats-bar { flex-wrap: wrap; gap: 20px; }
             .stat-item .number { font-size: 2rem; }
             .player-section { flex-direction: column; text-align: center; }
             .admin-stats-grid { grid-template-columns: 1fr; }
             .profile-stats-grid { grid-template-columns: 1fr; }
+            .datasource-grid { grid-template-columns: 1fr; }
+            .db-location-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -394,6 +436,8 @@
             </div>
             <div class="admin-tabs">
                 <button class="admin-tab active" data-admin-tab="stats">Statistics</button>
+                <button class="admin-tab" data-admin-tab="datasources">🗄️ Data Sources</button>
+                <button class="admin-tab" data-admin-tab="database">🗃️ SQL Database</button>
                 <button class="admin-tab" data-admin-tab="users">Users</button>
                 <button class="admin-tab" data-admin-tab="leaderboards">Leaderboards</button>
                 <button class="admin-tab" data-admin-tab="changelog">Changelog</button>
@@ -415,6 +459,117 @@
                     <button class="btn-secondary danger" id="reset-all-data-btn">🗑️ Reset All</button>
                 </div>
             </div>
+
+            <!-- Data Sources Tab -->
+            <div id="admin-datasources-tab" class="admin-tab-content">
+                <div class="datasource-status">
+                    <span class="status-label">Active Data Source:</span>
+                    <span class="status-value" id="active-datasource">localStorage</span>
+                    <span class="status-indicator connected" id="datasource-status-indicator"></span>
+                </div>
+                <div class="datasource-grid">
+                    <div class="datasource-card active" data-source="localStorage">
+                        <div class="datasource-header">
+                            <span class="datasource-icon">💾</span>
+                            <div class="datasource-title"><h4>localStorage</h4><span class="datasource-badge default">Default</span></div>
+                        </div>
+                        <p class="datasource-desc">Browser-based storage. Data persists locally, no sync across devices.</p>
+                        <div class="datasource-features">
+                            <span class="feature">✓ No setup required</span>
+                            <span class="feature">✓ Works offline</span>
+                            <span class="feature">✗ No sync</span>
+                        </div>
+                        <button class="btn-secondary full-width datasource-select-btn" data-source="localStorage">Selected ✓</button>
+                    </div>
+                    <div class="datasource-card" data-source="googleSheets">
+                        <div class="datasource-header">
+                            <span class="datasource-icon">📊</span>
+                            <div class="datasource-title"><h4>Google Sheets</h4><span class="datasource-badge cloud">Cloud</span></div>
+                        </div>
+                        <p class="datasource-desc">Use Google Forms for writes and Apps Script API for reads.</p>
+                        <div class="datasource-features">
+                            <span class="feature">✓ Free tier</span>
+                            <span class="feature">✓ Cloud sync</span>
+                            <span class="feature">✓ Spreadsheet backup</span>
+                        </div>
+                        <button class="btn-secondary full-width datasource-select-btn" data-source="googleSheets">Configure</button>
+                    </div>
+                    <div class="datasource-card" data-source="githubGist">
+                        <div class="datasource-header">
+                            <span class="datasource-icon">📝</span>
+                            <div class="datasource-title"><h4>GitHub Gist</h4><span class="datasource-badge cloud">Cloud</span></div>
+                        </div>
+                        <p class="datasource-desc">Store data in a GitHub Gist. Public or secret, with version history.</p>
+                        <div class="datasource-features">
+                            <span class="feature">✓ Version control</span>
+                            <span class="feature">✓ Public or private</span>
+                            <span class="feature">✓ Free unlimited</span>
+                        </div>
+                        <button class="btn-secondary full-width datasource-select-btn" data-source="githubGist">Configure</button>
+                    </div>
+                    <div class="datasource-card" data-source="githubRepo">
+                        <div class="datasource-header">
+                            <span class="datasource-icon">📁</span>
+                            <div class="datasource-title"><h4>GitHub Repo</h4><span class="datasource-badge cloud">Cloud</span></div>
+                        </div>
+                        <p class="datasource-desc">Store JSON data in a GitHub repository file.</p>
+                        <div class="datasource-features">
+                            <span class="feature">✓ Version control</span>
+                            <span class="feature">✓ CI/CD friendly</span>
+                            <span class="feature">✗ Requires token</span>
+                        </div>
+                        <button class="btn-secondary full-width datasource-select-btn" data-source="githubRepo">Configure</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SQL Database Tab -->
+            <div id="admin-database-tab" class="admin-tab-content">
+                <div class="db-location-section">
+                    <div class="section-header">
+                        <h4>🌐 Database Location</h4>
+                        <span class="db-location-status" id="db-location-status">Browser</span>
+                    </div>
+                    <div class="db-location-grid">
+                        <div class="db-location-card active" data-location="browser">
+                            <div class="db-loc-icon">💻</div>
+                            <div class="db-loc-info"><h5>Browser</h5><p>Stored in localStorage. This device only.</p></div>
+                            <span class="db-loc-badge">Active</span>
+                        </div>
+                        <div class="db-location-card" data-location="localServer">
+                            <div class="db-loc-icon">🖥️</div>
+                            <div class="db-loc-info"><h5>Local Server</h5><p>Your PC + Cloudflare Tunnel. Access anywhere.</p></div>
+                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('localServer')">Configure</button>
+                        </div>
+                        <div class="db-location-card" data-location="githubSync">
+                            <div class="db-loc-icon">🐙</div>
+                            <div class="db-loc-info"><h5>GitHub Sync</h5><p>Auto-sync .db file to GitHub. All sites access.</p></div>
+                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('githubSync')">Configure</button>
+                        </div>
+                        <div class="db-location-card" data-location="supabase">
+                            <div class="db-loc-icon">⚡</div>
+                            <div class="db-loc-info"><h5>Supabase</h5><p>Cloud PostgreSQL. Real SQL, free tier.</p></div>
+                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('supabase')">Configure</button>
+                        </div>
+                        <div class="db-location-card" data-location="turso">
+                            <div class="db-loc-icon">🚀</div>
+                            <div class="db-loc-info"><h5>Turso</h5><p>Edge SQLite. Fast, free 9GB.</p></div>
+                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('turso')">Configure</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="sql-status-bar">
+                    <span class="sql-status-icon" id="sql-status-icon">⚪</span>
+                    <span id="sql-status-text">Database not loaded</span>
+                    <span id="sql-status-source"></span>
+                </div>
+                <p class="db-info-note">Load database from GitHub or create new to enable SQL queries.</p>
+                <div class="db-actions">
+                    <button class="btn-secondary" id="sql-load-github-btn">📥 Load from GitHub</button>
+                    <button class="btn-secondary" id="sql-new-db-btn">➕ New Database</button>
+                    <button class="btn-secondary" id="sql-save-github-btn" disabled>🐙 Save to GitHub</button>
+                </div>
+            </div>
             <div id="admin-users-tab" class="admin-tab-content">
                 <p style="margin-bottom:15px;" id="users-count">0 users</p>
                 <div class="users-table" id="users-table"></div>
@@ -432,10 +587,14 @@
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 
+    <!-- sql.js for browser SQLite -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+    
     <script src="js/cloud-database.js"></script>
     <script src="js/config.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/sql-database.js"></script>
     <script src="js/app.js"></script>
     <script>
         const GAMES = [
