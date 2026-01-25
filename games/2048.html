@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>2048 - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔢</text></svg>">
+    <style>
+        .game-2048 {
+            background: #bbada0;
+            border-radius: 12px;
+            padding: 15px;
+            display: inline-block;
+        }
+        .grid-2048 {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            gap: 12px;
+        }
+        .tile {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            background: rgba(238, 228, 218, 0.35);
+            transition: all 0.1s;
+        }
+        .tile[data-value="2"] { background: #eee4da; color: #776e65; }
+        .tile[data-value="4"] { background: #ede0c8; color: #776e65; }
+        .tile[data-value="8"] { background: #f2b179; color: #f9f6f2; }
+        .tile[data-value="16"] { background: #f59563; color: #f9f6f2; }
+        .tile[data-value="32"] { background: #f67c5f; color: #f9f6f2; }
+        .tile[data-value="64"] { background: #f65e3b; color: #f9f6f2; }
+        .tile[data-value="128"] { background: #edcf72; color: #f9f6f2; font-size: 1.75rem; }
+        .tile[data-value="256"] { background: #edcc61; color: #f9f6f2; font-size: 1.75rem; }
+        .tile[data-value="512"] { background: #edc850; color: #f9f6f2; font-size: 1.75rem; }
+        .tile[data-value="1024"] { background: #edc53f; color: #f9f6f2; font-size: 1.5rem; }
+        .tile[data-value="2048"] { background: #edc22e; color: #f9f6f2; font-size: 1.5rem; }
+        .tile.new { animation: pop 0.2s ease; }
+        .tile.merged { animation: merge 0.2s ease; }
+        @keyframes pop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+        @keyframes merge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @media (max-width: 400px) {
+            .grid-2048 { grid-template-columns: repeat(4, 65px); gap: 8px; }
+            .tile { width: 65px; height: 65px; font-size: 1.5rem; }
+            .tile[data-value="128"], .tile[data-value="256"], .tile[data-value="512"] { font-size: 1.25rem; }
+            .tile[data-value="1024"], .tile[data-value="2048"] { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🔢 2048</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Moves</div>
+                <div class="value" id="moves">0</div>
+            </div>
+        </div>
+
+        <div class="game-board" style="display:flex;justify-content:center;">
+            <div class="game-2048">
+                <div class="grid-2048" id="gameGrid"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="newGameBtn">🔄 New Game</button>
+        </div>
+
+        <div class="mobile-controls">
+            <div class="dpad">
+                <button class="mobile-btn" data-dir="up">↑</button>
+                <button class="mobile-btn" data-dir="left">←</button>
+                <button class="mobile-btn" data-dir="right">→</button>
+                <button class="mobile-btn" data-dir="down">↓</button>
+            </div>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Use arrow keys or swipe to move tiles</li>
+                <li>Tiles with the same number merge</li>
+                <li>Reach 2048 to win!</li>
+                <li>Game ends when no moves are left</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = '2048';
+        const SIZE = 4;
+        
+        let grid = [];
+        let score = 0;
+        let moves = 0;
+        let gameOver = false;
+        
+        function init() {
+            grid = Array(SIZE).fill().map(() => Array(SIZE).fill(0));
+            score = 0;
+            moves = 0;
+            gameOver = false;
+            
+            addRandomTile();
+            addRandomTile();
+            
+            render();
+            updateUI();
+            
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function addRandomTile() {
+            const empty = [];
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    if (grid[r][c] === 0) empty.push({r, c});
+                }
+            }
+            
+            if (empty.length === 0) return false;
+            
+            const {r, c} = empty[Math.floor(Math.random() * empty.length)];
+            grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+            return true;
+        }
+        
+        function render() {
+            const gridEl = document.getElementById('gameGrid');
+            let html = '';
+            
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    const val = grid[r][c];
+                    html += `<div class="tile" data-value="${val}">${val || ''}</div>`;
+                }
+            }
+            
+            gridEl.innerHTML = html;
+        }
+        
+        function slide(row) {
+            let arr = row.filter(x => x !== 0);
+            let newArr = [];
+            let merged = false;
+            
+            for (let i = 0; i < arr.length; i++) {
+                if (i < arr.length - 1 && arr[i] === arr[i + 1]) {
+                    newArr.push(arr[i] * 2);
+                    score += arr[i] * 2;
+                    i++;
+                    merged = true;
+                } else {
+                    newArr.push(arr[i]);
+                }
+            }
+            
+            while (newArr.length < SIZE) newArr.push(0);
+            return { row: newArr, merged };
+        }
+        
+        function move(direction) {
+            if (gameOver) return;
+            
+            let moved = false;
+            const oldGrid = grid.map(r => [...r]);
+            
+            if (direction === 'left') {
+                for (let r = 0; r < SIZE; r++) {
+                    const result = slide(grid[r]);
+                    grid[r] = result.row;
+                }
+            } else if (direction === 'right') {
+                for (let r = 0; r < SIZE; r++) {
+                    const result = slide([...grid[r]].reverse());
+                    grid[r] = result.row.reverse();
+                }
+            } else if (direction === 'up') {
+                for (let c = 0; c < SIZE; c++) {
+                    const col = [grid[0][c], grid[1][c], grid[2][c], grid[3][c]];
+                    const result = slide(col);
+                    for (let r = 0; r < SIZE; r++) grid[r][c] = result.row[r];
+                }
+            } else if (direction === 'down') {
+                for (let c = 0; c < SIZE; c++) {
+                    const col = [grid[3][c], grid[2][c], grid[1][c], grid[0][c]];
+                    const result = slide(col);
+                    for (let r = 0; r < SIZE; r++) grid[r][c] = result.row[3 - r];
+                }
+            }
+            
+            // Check if anything moved
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    if (grid[r][c] !== oldGrid[r][c]) moved = true;
+                }
+            }
+            
+            if (moved) {
+                moves++;
+                addRandomTile();
+                render();
+                updateUI();
+                GameUtils.playSound('point');
+                GameUtils.vibrate(20);
+                
+                // Check win
+                if (grid.flat().includes(2048)) {
+                    setTimeout(() => {
+                        if (confirm('🎉 You reached 2048! Continue playing?')) {
+                            // Keep playing
+                        } else {
+                            endGame();
+                        }
+                    }, 300);
+                }
+                
+                // Check game over
+                if (!canMove()) {
+                    gameOver = true;
+                    setTimeout(endGame, 500);
+                }
+            }
+        }
+        
+        function canMove() {
+            // Check for empty cells
+            if (grid.flat().includes(0)) return true;
+            
+            // Check for possible merges
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    const val = grid[r][c];
+                    if (r < SIZE - 1 && grid[r + 1][c] === val) return true;
+                    if (c < SIZE - 1 && grid[r][c + 1] === val) return true;
+                }
+            }
+            
+            return false;
+        }
+        
+        function endGame() {
+            GameUtils.playSound('gameover');
+            GameUtils.showGameOver(score, GAME_ID, {
+                extraData: { moves, maxTile: Math.max(...grid.flat()) }
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('moves').textContent = moves;
+        }
+        
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                const dir = e.key.replace('Arrow', '').toLowerCase();
+                move(dir);
+            }
+        });
+        
+        // Mobile buttons
+        document.querySelectorAll('.mobile-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                move(btn.dataset.dir);
+            });
+        });
+        
+        // Swipe controls
+        GameUtils.enableSwipeControls(document.getElementById('gameGrid'), {
+            up: () => move('up'),
+            down: () => move('down'),
+            left: () => move('left'),
+            right: () => move('right')
+        });
+        
+        document.getElementById('newGameBtn').addEventListener('click', init);
+        
+        init();
+    </script>
+</body>
+</html>

@@ -1,60 +1,346 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gameatica - Gaming Community & Reviews</title>
-  <meta name="description" content="Your ultimate gaming destination. Reviews, guides, community, and the latest gaming news all in one place.">
-  <meta name="keywords" content="gaming, video games, game reviews, gaming community, esports, game guides, PC gaming, console gaming">
-  <meta name="author" content="AIUNITES">
-  <link rel="canonical" href="https://aiunites.github.io/gameatica-site/">
-  <meta property="og:title" content="Gameatica - Gaming Community & Reviews">
-  <meta property="og:description" content="Your ultimate gaming destination.">
-  <meta property="og:image" content="https://aiunites.github.io/gameatica-site/images/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="theme-color" content="#ef4444">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gameatica - Free Online Arcade Games</title>
+    <meta name="description" content="Play free online games! Snake, Tetris, 2048, Memory, Trivia, Typing Test, and more. No downloads, no ads, just fun.">
+    <meta name="keywords" content="free games, online games, arcade games, browser games, snake, tetris, 2048, trivia, typing test">
+    <meta name="author" content="AIUNITES">
+    <link rel="canonical" href="https://aiunites.github.io/gameatica-site/">
+    <meta property="og:title" content="Gameatica - Free Online Arcade Games">
+    <meta property="og:description" content="Play free online games! Snake, Tetris, 2048, and more.">
+    <meta property="og:image" content="https://aiunites.github.io/gameatica-site/images/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="theme-color" content="#ef4444">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <style>
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .game-card {
+            background: var(--dark-light);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(239,68,68,0.3);
+            box-shadow: 0 10px 40px rgba(239,68,68,0.1);
+        }
+        .game-icon {
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(249,115,22,0.1));
+        }
+        .game-card:nth-child(2n) .game-icon { background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(16,185,129,0.1)); }
+        .game-card:nth-child(3n) .game-icon { background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.1)); }
+        .game-card:nth-child(5n) .game-icon { background: linear-gradient(135deg, rgba(234,179,8,0.1), rgba(249,115,22,0.1)); }
+        .game-card:nth-child(7n) .game-icon { background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(168,85,247,0.1)); }
+        
+        .game-info {
+            padding: 20px;
+        }
+        .game-info h3 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+        .game-info p {
+            color: var(--gray-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .game-tags {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: var(--gray-light);
+        }
+        .category-filter {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .filter-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 25px;
+            color: var(--gray-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        .filter-btn:hover {
+            border-color: var(--primary);
+            color: var(--white);
+        }
+        .filter-btn.active {
+            background: var(--gradient);
+            border-color: transparent;
+            color: var(--white);
+        }
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            padding: 30px 0;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 30px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-item .label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        .player-section {
+            background: var(--dark-light);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        .player-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .player-stats {
+            color: var(--gray-light);
+            font-size: 0.85rem;
+        }
+        .change-name-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--white);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .change-name-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        @media (max-width: 768px) {
+            .stats-bar { flex-wrap: wrap; gap: 20px; }
+            .stat-item .number { font-size: 2rem; }
+            .player-section { flex-direction: column; text-align: center; }
+        }
+    </style>
 </head>
 <body>
-  <!-- AIUNITES Webring -->
-  <style>.aiunites-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(90deg,#0a0a0f,#1a1a2e);border-bottom:1px solid rgba(99,102,241,.3);padding:8px 0;font-size:12px}.aiunites-bar-content{max-width:1400px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;overflow-x:auto;scrollbar-width:none}.aiunites-bar-content::-webkit-scrollbar{display:none}.aiunites-bar a{color:rgba(255,255,255,.7);text-decoration:none;white-space:nowrap;transition:color .2s}.aiunites-bar a:hover{color:#fff}.aiunites-bar-brand{color:#6366f1!important;font-weight:600}.aiunites-bar-brand:hover{color:#818cf8!important}.aiunites-bar-divider{color:rgba(255,255,255,.2)}body{padding-top:36px!important}.nav{top:36px!important}</style>
-  <div class="aiunites-bar"><div class="aiunites-bar-content"><a href="https://aiunites.github.io/aiunites-site/" class="aiunites-bar-brand">◆ AIUNITES</a><span class="aiunites-bar-divider">|</span><a href="https://aiunites.github.io/aizines-app/">AIZines</a><a href="https://aiunites.github.io/aibyjob-demo/">AIByJob</a><a href="https://aiunites.github.io/redomy-demo/">Redomy</a><a href="https://aiunites.github.io/videobate-site/">VideoBate</a><a href="https://aiunites.github.io/furnishthings-site/">FurnishThings</a><a href="https://aiunites.github.io/bizstry-site/">BizStry</a><a href="https://aiunites.github.io/aiyhwh-site/">AI YHWH</a><a href="https://aiunites.github.io/cloudsion-site/">Cloudsion</a><a href="https://aiunites.github.io/gameatica-site/">Gameatica</a><a href="https://aiunites.github.io/uptownit-site/">UptownIT</a><a href="https://aiunites.github.io/inthisworld-site/">InThisWorld</a><a href="https://aiunites.github.io/erpise-site/">ERPise</a><a href="https://aiunites.github.io/erpize-site/">ERPize</a><a href="https://aiunites.github.io/cosmostheopera-site/">🌌 COSMOS</a></div></div>
-  <script>(function(){if(location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'){document.querySelectorAll('.aiunites-bar a').forEach(a=>{a.href=a.href.replace('https://aiunites.github.io/','../')+'index.html';});}})()</script>
+    <!-- AIUNITES Webring -->
+    <style>.aiunites-bar{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(90deg,#0a0a0f,#1a1a2e);border-bottom:1px solid rgba(99,102,241,.3);padding:8px 0;font-size:12px}.aiunites-bar-content{max-width:1400px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:12px;overflow-x:auto;scrollbar-width:none}.aiunites-bar-content::-webkit-scrollbar{display:none}.aiunites-bar a{color:rgba(255,255,255,.7);text-decoration:none;white-space:nowrap;transition:color .2s}.aiunites-bar a:hover{color:#fff}.aiunites-bar-brand{color:#6366f1!important;font-weight:600}.aiunites-bar-brand:hover{color:#818cf8!important}.aiunites-bar-divider{color:rgba(255,255,255,.2)}body{padding-top:36px!important}.nav{top:36px!important}</style>
+    <div class="aiunites-bar"><div class="aiunites-bar-content"><a href="https://aiunites.github.io/aiunites-site/" class="aiunites-bar-brand">◆ AIUNITES</a><span class="aiunites-bar-divider">|</span><a href="https://aiunites.github.io/aizines-app/">AIZines</a><a href="https://aiunites.github.io/aibyjob-demo/">AIByJob</a><a href="https://aiunites.github.io/redomy-demo/">Redomy</a><a href="https://aiunites.github.io/videobate-site/">VideoBate</a><a href="https://aiunites.github.io/furnishthings-site/">FurnishThings</a><a href="https://aiunites.github.io/bizstry-site/">BizStry</a><a href="https://aiunites.github.io/aiyhwh-site/">AI YHWH</a><a href="https://aiunites.github.io/cloudsion-site/">Cloudsion</a><a href="https://aiunites.github.io/gameatica-site/">Gameatica</a><a href="https://aiunites.github.io/uptownit-site/">UptownIT</a><a href="https://aiunites.github.io/inthisworld-site/">InThisWorld</a><a href="https://aiunites.github.io/erpise-site/">ERPise</a><a href="https://aiunites.github.io/erpize-site/">ERPize</a><a href="https://aiunites.github.io/cosmostheopera-site/">🌌 COSMOS</a></div></div>
+    <script>(function(){if(location.protocol==='file:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'){document.querySelectorAll('.aiunites-bar a').forEach(a=>{a.href=a.href.replace('https://aiunites.github.io/','../')+'index.html';});}})()</script>
 
-  <nav class="nav"><div class="nav-container"><a href="#" class="nav-logo"><span>🎮</span><span>Game<span class="accent">atica</span></span></a><div class="nav-links"><a href="#games">Games</a><a href="#reviews">Reviews</a><a href="#community">Community</a></div></div></nav>
-  
-  <section class="hero">
-    <div class="hero-content">
-      <div class="badge">🚧 Demo / Pre-Launch Preview</div>
-      <h1>Level Up Your<br><span class="gradient-text">Gaming Experience</span></h1>
-      <p>Reviews, guides, news, and a community of passionate gamers. Your one-stop destination for everything gaming.</p>
-      <div class="hero-cta"><a href="#games" class="btn btn-primary">Explore Games</a><a href="#community" class="btn btn-secondary">Join Waitlist</a></div>
-      <div class="hero-stats"><div class="stat"><span class="stat-value">🎮</span><span class="stat-label">Reviews</span></div><div class="stat"><span class="stat-value">👥</span><span class="stat-label">Community</span></div><div class="stat"><span class="stat-value">🚀</span><span class="stat-label">Coming Soon</span></div></div>
-    </div>
-  </section>
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo"><span>🎮</span><span>Game<span class="accent">atica</span></span></a>
+            <div class="nav-links">
+                <a href="#arcade">Arcade</a>
+                <a href="#puzzle">Puzzle</a>
+                <a href="#skill">Skill</a>
+            </div>
+        </div>
+    </nav>
+    
+    <section class="hero" style="min-height: auto; padding: 6rem 2rem 3rem;">
+        <div class="hero-content">
+            <div class="badge">🎮 Free Online Games</div>
+            <h1>Welcome to<br><span class="gradient-text">Gameatica Arcade</span></h1>
+            <p>Play classic games right in your browser. No downloads, no ads, just pure gaming fun. Challenge yourself and climb the leaderboards!</p>
+        </div>
+    </section>
 
-  <section class="features" id="games">
-    <div class="container">
-      <div class="section-header"><span class="badge">Features</span><h2>What We Offer</h2></div>
-      <div class="features-grid">
-        <div class="feature-card"><span class="icon">📝</span><h3>In-Depth Reviews</h3><p>Honest, detailed reviews from gamers who actually play.</p></div>
-        <div class="feature-card"><span class="icon">📚</span><h3>Strategy Guides</h3><p>Master any game with our comprehensive walkthroughs.</p></div>
-        <div class="feature-card"><span class="icon">📰</span><h3>Latest News</h3><p>Breaking gaming news and industry updates.</p></div>
-        <div class="feature-card"><span class="icon">🏆</span><h3>Esports Coverage</h3><p>Tournament results, team rankings, and player profiles.</p></div>
-        <div class="feature-card"><span class="icon">💬</span><h3>Community Forums</h3><p>Connect with fellow gamers and share experiences.</p></div>
-        <div class="feature-card"><span class="icon">🎁</span><h3>Giveaways</h3><p>Regular contests and free game giveaways.</p></div>
-      </div>
-    </div>
-  </section>
+    <section class="container">
+        <div class="player-section">
+            <div class="player-info">
+                <div class="player-avatar">👤</div>
+                <div>
+                    <div class="player-name" id="playerName">Player</div>
+                    <div class="player-stats">Playing since today</div>
+                </div>
+            </div>
+            <button class="change-name-btn" onclick="changeName()">✏️ Change Name</button>
+        </div>
 
-  <section class="cta" id="community"><div class="container"><h2>Ready to Join?</h2><p>Be the first to know when Gameatica launches.</p><a href="https://docs.google.com/forms/d/e/1FAIpQLSeQUi49AdTBRjetz5MDFQgMIkm9-vOMb_ARKwYEz41j_Nfiwg/viewform?usp=pp_url&entry.2053726945=Gameatica" target="_blank" class="btn btn-primary btn-large">Join Waitlist</a></div></section>
-  
-  <footer class="footer"><div class="container"><p>🎮 Gameatica - Your Gaming Destination</p><p style="color:#f59e0b;margin:10px 0;">⚠️ This is a demo/concept site. Features shown are not yet available.</p><p>&copy; 2026 Gameatica. A product of <a href="https://aiunites.github.io/aiunites-site">AIUNITES</a> | <a href="https://github.com/AIUNITES/gameatica-site/issues" target="_blank">Developer Feedback</a></p></div></footer>
-  <!-- Floating Help Button -->
-  <style>.help-fab{position:fixed;bottom:24px;right:24px;width:auto;padding:0 16px;height:48px;background:linear-gradient(135deg,#ff3366,#ff6b35);border-radius:24px;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#fff;text-decoration:none;box-shadow:0 4px 20px rgba(255,51,102,0.4);transition:all 0.3s;z-index:9999;}.help-fab:hover{transform:scale(1.05);box-shadow:0 6px 30px rgba(255,51,102,0.5);}</style>
-  <a href="https://docs.google.com/forms/d/e/1FAIpQLSeQUi49AdTBRjetz5MDFQgMIkm9-vOMb_ARKwYEz41j_Nfiwg/viewform?usp=pp_url&entry.2053726945=Gameatica" target="_blank" class="help-fab">💬 Help / Feedback</a>
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="number">13</div>
+                <div class="label">Games Available</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="totalPlays">0</div>
+                <div class="label">Times Played</div>
+            </div>
+            <div class="stat-item">
+                <div class="number">∞</div>
+                <div class="label">Fun Guaranteed</div>
+            </div>
+        </div>
+
+        <div class="category-filter">
+            <button class="filter-btn active" data-cat="all">🎮 All Games</button>
+            <button class="filter-btn" data-cat="arcade">🕹️ Arcade</button>
+            <button class="filter-btn" data-cat="puzzle">🧩 Puzzle</button>
+            <button class="filter-btn" data-cat="skill">⚡ Skill</button>
+            <button class="filter-btn" data-cat="word">📝 Word</button>
+        </div>
+
+        <div class="games-grid" id="gamesGrid">
+            <!-- Games populated by JS -->
+        </div>
+    </section>
+
+    <section class="cta" id="community">
+        <div class="container">
+            <h2>More Games Coming Soon!</h2>
+            <p>We're always adding new games. Have a suggestion?</p>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLSeQUi49AdTBRjetz5MDFQgMIkm9-vOMb_ARKwYEz41j_Nfiwg/viewform?usp=pp_url&entry.2053726945=Gameatica" target="_blank" class="btn btn-primary btn-large">📬 Send Feedback</a>
+        </div>
+    </section>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>🎮 Gameatica - Your Free Online Arcade</p>
+            <p>&copy; 2026 Gameatica. A product of <a href="https://aiunites.github.io/aiunites-site">AIUNITES</a> | <a href="https://github.com/AIUNITES/gameatica-site/issues" target="_blank">Developer Feedback</a></p>
+        </div>
+    </footer>
+
+    <script src="js/cloud-database.js"></script>
+    <script>
+        const GAMES = [
+            // Arcade Games
+            { id: 'snake', name: 'Snake', icon: '🐍', desc: 'Classic snake game. Eat food, grow longer, don\'t hit yourself!', tags: ['arcade', 'classic'], cat: 'arcade' },
+            { id: 'tetris', name: 'Tetris', icon: '🧱', desc: 'Stack falling blocks and clear lines. The original puzzle game!', tags: ['arcade', 'classic'], cat: 'arcade' },
+            { id: 'breakout', name: 'Breakout', icon: '🧱', desc: 'Break all the bricks with your paddle and ball.', tags: ['arcade', 'classic'], cat: 'arcade' },
+            { id: 'flappy', name: 'Flappy', icon: '🐦', desc: 'Tap to fly through the pipes. How far can you go?', tags: ['arcade', 'endless'], cat: 'arcade' },
+            { id: 'pong', name: 'Pong', icon: '🏓', desc: 'Classic paddle game vs CPU. First to 5 wins!', tags: ['arcade', 'classic'], cat: 'arcade' },
+            { id: 'asteroids', name: 'Asteroids', icon: '☄️', desc: 'Blast asteroids in space. Don\'t get hit!', tags: ['arcade', 'shooter'], cat: 'arcade' },
+            
+            // Puzzle Games
+            { id: '2048', name: '2048', icon: '🔢', desc: 'Slide tiles and merge numbers to reach 2048.', tags: ['puzzle', 'numbers'], cat: 'puzzle' },
+            { id: 'memory', name: 'Memory Match', icon: '🧠', desc: 'Find matching pairs of cards. Test your memory!', tags: ['puzzle', 'brain'], cat: 'puzzle' },
+            { id: 'minesweeper', name: 'Minesweeper', icon: '💣', desc: 'Clear the minefield without hitting any bombs.', tags: ['puzzle', 'logic'], cat: 'puzzle' },
+            { id: 'sudoku', name: 'Sudoku', icon: '9️⃣', desc: 'Fill the 9x9 grid with numbers 1-9. Classic logic puzzle!', tags: ['puzzle', 'logic'], cat: 'puzzle' },
+            { id: 'sliding', name: 'Sliding Puzzle', icon: '🧩', desc: 'Slide tiles to arrange them in order.', tags: ['puzzle', 'classic'], cat: 'puzzle' },
+            { id: 'match3', name: 'Match 3', icon: '💎', desc: 'Match 3 or more gems to score points!', tags: ['puzzle', 'match'], cat: 'puzzle' },
+            
+            // Skill Games
+            { id: 'typing', name: 'Typing Test', icon: '⌨️', desc: 'How fast can you type? Test your WPM!', tags: ['skill', 'speed'], cat: 'skill' },
+            { id: 'reaction', name: 'Reaction Test', icon: '⚡', desc: 'Test your reflexes. Click as fast as you can!', tags: ['skill', 'speed'], cat: 'skill' },
+            { id: 'simon', name: 'Simon Says', icon: '🎨', desc: 'Remember the color sequence. Don\'t mess up!', tags: ['skill', 'memory'], cat: 'skill' },
+            
+            // Word & Card Games
+            { id: 'trivia', name: 'Trivia Quiz', icon: '❓', desc: 'Test your knowledge across multiple categories.', tags: ['word', 'quiz'], cat: 'word' },
+            { id: 'wordguess', name: 'Word Guess', icon: '📝', desc: 'Guess the 5-letter word in 6 tries. Daily challenge!', tags: ['word', 'puzzle'], cat: 'word' },
+            { id: 'blackjack', name: 'Blackjack', icon: '🃏', desc: 'Try to beat the dealer! Get 21 without going over.', tags: ['card', 'casino'], cat: 'word' },
+        ];
+
+        function renderGames(filter = 'all') {
+            const grid = document.getElementById('gamesGrid');
+            const filtered = filter === 'all' ? GAMES : GAMES.filter(g => g.cat === filter);
+            
+            grid.innerHTML = filtered.map(game => `
+                <a href="games/${game.id}.html" class="game-card">
+                    <div class="game-icon">${game.icon}</div>
+                    <div class="game-info">
+                        <h3>${game.name}</h3>
+                        <p>${game.desc}</p>
+                        <div class="game-tags">
+                            ${game.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function changeName() {
+            const current = localStorage.getItem('gameatica_playerName') || 'Player';
+            const name = prompt('Enter your player name:', current);
+            if (name && name.trim()) {
+                localStorage.setItem('gameatica_playerName', name.trim());
+                document.getElementById('playerName').textContent = name.trim();
+            }
+        }
+
+        function loadPlayer() {
+            const name = localStorage.getItem('gameatica_playerName') || 'Player';
+            document.getElementById('playerName').textContent = name;
+            
+            // Count total plays (sum of all game scores)
+            let totalPlays = 0;
+            GAMES.forEach(game => {
+                const scores = JSON.parse(localStorage.getItem('gameatica_' + game.id + '_scores') || '[]');
+                totalPlays += scores.length;
+            });
+            document.getElementById('totalPlays').textContent = totalPlays;
+        }
+
+        // Category filter
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderGames(btn.dataset.cat);
+            });
+        });
+
+        // Init
+        renderGames();
+        loadPlayer();
+        CloudDB.init({ siteName: 'Gameatica' });
+    </script>
 </body>
 </html>

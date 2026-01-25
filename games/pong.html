@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pong - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏓</text></svg>">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🏓 Pong</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">You</div>
+                <div class="value" id="playerScore">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Rallies</div>
+                <div class="value" id="rallies">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">CPU</div>
+                <div class="value" id="cpuScore">0</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <canvas id="gameCanvas" class="game-canvas" width="600" height="400"></canvas>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="startBtn">▶ Start Game</button>
+        </div>
+
+        <div class="mobile-controls" style="display: flex;">
+            <button class="mobile-btn" id="upBtn" style="width:100px;">↑ Up</button>
+            <button class="mobile-btn" id="downBtn" style="width:100px;">Down ↓</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 Longest Rallies</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Move your paddle with mouse, touch, or ↑↓ keys</li>
+                <li>Don't let the ball pass you!</li>
+                <li>First to 5 points wins</li>
+                <li>Longer rallies = higher score</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'pong';
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const PADDLE_HEIGHT = 80;
+        const PADDLE_WIDTH = 12;
+        const BALL_SIZE = 12;
+        const WINNING_SCORE = 5;
+        
+        let player = { y: canvas.height / 2 - PADDLE_HEIGHT / 2, score: 0 };
+        let cpu = { y: canvas.height / 2 - PADDLE_HEIGHT / 2, score: 0 };
+        let ball = { x: 0, y: 0, dx: 0, dy: 0 };
+        let rallies = 0;
+        let currentRally = 0;
+        let maxRally = 0;
+        let isRunning = false;
+        let animationId = null;
+        
+        function init() {
+            player = { y: canvas.height / 2 - PADDLE_HEIGHT / 2, score: 0 };
+            cpu = { y: canvas.height / 2 - PADDLE_HEIGHT / 2, score: 0 };
+            rallies = 0;
+            maxRally = 0;
+            resetBall();
+            draw();
+            updateUI();
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function resetBall() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.dx = (Math.random() > 0.5 ? 1 : -1) * 5;
+            ball.dy = (Math.random() - 0.5) * 6;
+            currentRally = 0;
+        }
+        
+        function draw() {
+            // Background
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Center line
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // Player paddle (left)
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.roundRect(20, player.y, PADDLE_WIDTH, PADDLE_HEIGHT, 6);
+            ctx.fill();
+            
+            // CPU paddle (right)
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.roundRect(canvas.width - 20 - PADDLE_WIDTH, cpu.y, PADDLE_WIDTH, PADDLE_HEIGHT, 6);
+            ctx.fill();
+            
+            // Ball with glow
+            ctx.shadowColor = '#fff';
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_SIZE, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Scores
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.font = 'bold 60px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(player.score, canvas.width / 4, 70);
+            ctx.fillText(cpu.score, canvas.width * 3 / 4, 70);
+        }
+        
+        function update() {
+            if (!isRunning) return;
+            
+            // Move ball
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+            
+            // Wall collision (top/bottom)
+            if (ball.y - BALL_SIZE < 0 || ball.y + BALL_SIZE > canvas.height) {
+                ball.dy = -ball.dy;
+            }
+            
+            // Player paddle collision
+            if (ball.x - BALL_SIZE < 32 && 
+                ball.y > player.y && 
+                ball.y < player.y + PADDLE_HEIGHT) {
+                ball.dx = Math.abs(ball.dx) * 1.05; // Speed up slightly
+                ball.dy += (ball.y - (player.y + PADDLE_HEIGHT / 2)) * 0.1;
+                currentRally++;
+                GameUtils.playSound('point');
+                GameUtils.vibrate(20);
+            }
+            
+            // CPU paddle collision
+            if (ball.x + BALL_SIZE > canvas.width - 32 && 
+                ball.y > cpu.y && 
+                ball.y < cpu.y + PADDLE_HEIGHT) {
+                ball.dx = -Math.abs(ball.dx) * 1.05;
+                ball.dy += (ball.y - (cpu.y + PADDLE_HEIGHT / 2)) * 0.1;
+                currentRally++;
+            }
+            
+            // Scoring
+            if (ball.x < 0) {
+                cpu.score++;
+                maxRally = Math.max(maxRally, currentRally);
+                rallies += currentRally;
+                updateUI();
+                checkWin();
+                resetBall();
+            } else if (ball.x > canvas.width) {
+                player.score++;
+                maxRally = Math.max(maxRally, currentRally);
+                rallies += currentRally;
+                updateUI();
+                checkWin();
+                resetBall();
+            }
+            
+            // CPU AI
+            const cpuCenter = cpu.y + PADDLE_HEIGHT / 2;
+            const diff = ball.y - cpuCenter;
+            const speed = 4 + player.score * 0.3; // CPU gets faster as player scores
+            if (Math.abs(diff) > 10) {
+                cpu.y += Math.sign(diff) * Math.min(speed, Math.abs(diff));
+            }
+            cpu.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, cpu.y));
+            
+            draw();
+            animationId = requestAnimationFrame(update);
+        }
+        
+        function checkWin() {
+            if (player.score >= WINNING_SCORE || cpu.score >= WINNING_SCORE) {
+                isRunning = false;
+                cancelAnimationFrame(animationId);
+                
+                const won = player.score >= WINNING_SCORE;
+                const score = (won ? 1000 : 0) + maxRally * 10 + rallies;
+                
+                GameUtils.playSound(won ? 'levelup' : 'gameover');
+                GameUtils.showGameOver(score, GAME_ID, {
+                    extraData: { 
+                        playerScore: player.score, 
+                        cpuScore: cpu.score,
+                        maxRally,
+                        totalRallies: rallies
+                    }
+                });
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('playerScore').textContent = player.score;
+            document.getElementById('cpuScore').textContent = cpu.score;
+            document.getElementById('rallies').textContent = currentRally;
+        }
+        
+        function startGame() {
+            init();
+            isRunning = true;
+            document.getElementById('startBtn').textContent = '🔄 Restart';
+            update();
+        }
+        
+        function movePlayer(y) {
+            player.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, y - PADDLE_HEIGHT / 2));
+            if (!isRunning) draw();
+        }
+        
+        // Mouse control
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            movePlayer(e.clientY - rect.top);
+        });
+        
+        // Touch control
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            movePlayer(e.touches[0].clientY - rect.top);
+        }, { passive: false });
+        
+        // Keyboard control
+        let keysPressed = {};
+        document.addEventListener('keydown', (e) => keysPressed[e.key] = true);
+        document.addEventListener('keyup', (e) => keysPressed[e.key] = false);
+        
+        setInterval(() => {
+            if (keysPressed['ArrowUp'] || keysPressed['w']) {
+                player.y = Math.max(0, player.y - 10);
+            }
+            if (keysPressed['ArrowDown'] || keysPressed['s']) {
+                player.y = Math.min(canvas.height - PADDLE_HEIGHT, player.y + 10);
+            }
+            if (!isRunning) draw();
+        }, 16);
+        
+        // Mobile buttons
+        let moveInterval = null;
+        const startMove = (dir) => {
+            moveInterval = setInterval(() => {
+                player.y = Math.max(0, Math.min(canvas.height - PADDLE_HEIGHT, player.y + dir * 10));
+                if (!isRunning) draw();
+            }, 16);
+        };
+        const stopMove = () => clearInterval(moveInterval);
+        
+        document.getElementById('upBtn').addEventListener('mousedown', () => startMove(-1));
+        document.getElementById('upBtn').addEventListener('touchstart', (e) => { e.preventDefault(); startMove(-1); });
+        document.getElementById('downBtn').addEventListener('mousedown', () => startMove(1));
+        document.getElementById('downBtn').addEventListener('touchstart', (e) => { e.preventDefault(); startMove(1); });
+        ['mouseup', 'mouseleave', 'touchend'].forEach(evt => {
+            document.getElementById('upBtn').addEventListener(evt, stopMove);
+            document.getElementById('downBtn').addEventListener(evt, stopMove);
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        
+        init();
+    </script>
+</body>
+</html>

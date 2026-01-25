@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Simon Says - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <style>
+        .simon-board {
+            display: grid;
+            grid-template-columns: repeat(2, 140px);
+            gap: 15px;
+            justify-content: center;
+        }
+        .simon-btn {
+            width: 140px;
+            height: 140px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.1s;
+            opacity: 0.6;
+        }
+        .simon-btn:active,
+        .simon-btn.active {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        .simon-btn.disabled {
+            cursor: not-allowed;
+        }
+        .simon-btn.green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .simon-btn.red { background: linear-gradient(135deg, #ef4444, #dc2626); }
+        .simon-btn.yellow { background: linear-gradient(135deg, #eab308, #ca8a04); }
+        .simon-btn.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+        
+        .simon-btn.green.active { box-shadow: 0 0 40px #22c55e; }
+        .simon-btn.red.active { box-shadow: 0 0 40px #ef4444; }
+        .simon-btn.yellow.active { box-shadow: 0 0 40px #eab308; }
+        .simon-btn.blue.active { box-shadow: 0 0 40px #3b82f6; }
+        
+        .status-message {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            min-height: 30px;
+        }
+        .status-message.watch { color: var(--warning); }
+        .status-message.play { color: var(--success); }
+        .status-message.wrong { color: var(--primary); }
+        
+        @media (max-width: 400px) {
+            .simon-board { grid-template-columns: repeat(2, 110px); gap: 10px; }
+            .simon-btn { width: 110px; height: 110px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back to Arcade</a>
+            <h1>🎨 Simon Says</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item">
+                <div class="label">Round</div>
+                <div class="value" id="round">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Score</div>
+                <div class="value" id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div class="label">Best</div>
+                <div class="value" id="best">0</div>
+            </div>
+        </div>
+
+        <div class="game-board">
+            <div class="status-message" id="status">Press Start to begin!</div>
+            <div class="simon-board" id="simonBoard">
+                <button class="simon-btn green" data-color="green"></button>
+                <button class="simon-btn red" data-color="red"></button>
+                <button class="simon-btn yellow" data-color="yellow"></button>
+                <button class="simon-btn blue" data-color="blue"></button>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="startBtn">▶ Start Game</button>
+        </div>
+
+        <div class="leaderboard">
+            <h3>🏆 High Scores</h3>
+            <div id="leaderboard"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Watch the sequence of colors</li>
+                <li>Repeat the sequence by clicking the buttons</li>
+                <li>Each round adds one more color</li>
+                <li>Make a mistake and it's game over!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'simon';
+        const COLORS = ['green', 'red', 'yellow', 'blue'];
+        const FREQUENCIES = { green: 392, red: 330, yellow: 262, blue: 196 };
+        
+        let sequence = [];
+        let playerIndex = 0;
+        let round = 0;
+        let score = 0;
+        let isPlaying = false;
+        let isShowingSequence = false;
+        let audioCtx = null;
+        
+        const buttons = document.querySelectorAll('.simon-btn');
+        
+        function init() {
+            sequence = [];
+            playerIndex = 0;
+            round = 0;
+            score = 0;
+            isPlaying = false;
+            isShowingSequence = false;
+            
+            updateUI();
+            setStatus('Press Start to begin!', '');
+            enableButtons(false);
+            
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+            GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        }
+        
+        function startGame() {
+            init();
+            isPlaying = true;
+            document.getElementById('startBtn').textContent = '🔄 Restart';
+            nextRound();
+        }
+        
+        function nextRound() {
+            round++;
+            playerIndex = 0;
+            
+            // Add random color to sequence
+            sequence.push(COLORS[Math.floor(Math.random() * COLORS.length)]);
+            
+            updateUI();
+            showSequence();
+        }
+        
+        async function showSequence() {
+            isShowingSequence = true;
+            enableButtons(false);
+            setStatus('Watch carefully...', 'watch');
+            
+            await sleep(500);
+            
+            for (let i = 0; i < sequence.length; i++) {
+                await flashButton(sequence[i], 500 - Math.min(round * 20, 300));
+                await sleep(200);
+            }
+            
+            isShowingSequence = false;
+            enableButtons(true);
+            setStatus('Your turn!', 'play');
+        }
+        
+        function flashButton(color, duration = 300) {
+            return new Promise(resolve => {
+                const btn = document.querySelector(`.simon-btn.${color}`);
+                btn.classList.add('active');
+                playTone(color, duration);
+                
+                setTimeout(() => {
+                    btn.classList.remove('active');
+                    resolve();
+                }, duration);
+            });
+        }
+        
+        function handleButtonClick(color) {
+            if (!isPlaying || isShowingSequence) return;
+            
+            flashButton(color, 200);
+            GameUtils.vibrate(30);
+            
+            if (color === sequence[playerIndex]) {
+                playerIndex++;
+                score += round;
+                updateUI();
+                
+                if (playerIndex === sequence.length) {
+                    // Completed the round!
+                    setStatus('Correct! 🎉', 'play');
+                    enableButtons(false);
+                    setTimeout(nextRound, 1000);
+                }
+            } else {
+                // Wrong!
+                gameOver();
+            }
+        }
+        
+        function gameOver() {
+            isPlaying = false;
+            enableButtons(false);
+            setStatus(`Wrong! The sequence was ${sequence.length} colors long.`, 'wrong');
+            
+            // Flash the correct button
+            flashButton(sequence[playerIndex], 500);
+            
+            GameUtils.playSound('gameover');
+            GameUtils.vibrate([100, 50, 100]);
+            
+            setTimeout(() => {
+                GameUtils.showGameOver(score, GAME_ID, {
+                    extraData: { round, sequenceLength: sequence.length }
+                });
+            }, 1000);
+        }
+        
+        function enableButtons(enabled) {
+            buttons.forEach(btn => {
+                btn.classList.toggle('disabled', !enabled);
+            });
+        }
+        
+        function setStatus(text, className = '') {
+            const status = document.getElementById('status');
+            status.textContent = text;
+            status.className = 'status-message ' + className;
+        }
+        
+        function updateUI() {
+            document.getElementById('round').textContent = round;
+            document.getElementById('score').textContent = score;
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function playTone(color, duration) {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.frequency.value = FREQUENCIES[color];
+            osc.type = 'sine';
+            gain.gain.value = 0.3;
+            
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration / 1000);
+            osc.stop(audioCtx.currentTime + duration / 1000);
+        }
+        
+        // Button click handlers
+        buttons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleButtonClick(btn.dataset.color);
+            });
+            
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handleButtonClick(btn.dataset.color);
+            });
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (!isPlaying || isShowingSequence) return;
+            
+            switch (e.key) {
+                case '1':
+                case 'q':
+                    handleButtonClick('green');
+                    break;
+                case '2':
+                case 'w':
+                    handleButtonClick('red');
+                    break;
+                case '3':
+                case 'a':
+                    handleButtonClick('yellow');
+                    break;
+                case '4':
+                case 's':
+                    handleButtonClick('blue');
+                    break;
+            }
+        });
+        
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        
+        init();
+    </script>
+</body>
+</html>
