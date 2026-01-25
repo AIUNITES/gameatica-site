@@ -575,49 +575,77 @@
 
             <!-- SQL Database Tab -->
             <div id="admin-database-tab" class="admin-tab-content">
-                <div class="db-location-section">
-                    <div class="section-header">
-                        <h4>🌐 Database Location</h4>
-                        <span class="db-location-status" id="db-location-status">Browser</span>
-                    </div>
-                    <div class="db-location-grid">
-                        <div class="db-location-card active" data-location="browser">
-                            <div class="db-loc-icon">💻</div>
-                            <div class="db-loc-info"><h5>Browser</h5><p>Stored in localStorage. This device only.</p></div>
-                            <span class="db-loc-badge">Active</span>
-                        </div>
-                        <div class="db-location-card" data-location="localServer">
-                            <div class="db-loc-icon">🖥️</div>
-                            <div class="db-loc-info"><h5>Local Server</h5><p>Your PC + Cloudflare Tunnel. Access anywhere.</p></div>
-                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('localServer')">Configure</button>
-                        </div>
-                        <div class="db-location-card" data-location="githubSync">
-                            <div class="db-loc-icon">🐙</div>
-                            <div class="db-loc-info"><h5>GitHub Sync</h5><p>Auto-sync .db file to GitHub. All sites access.</p></div>
-                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('githubSync')">Configure</button>
-                        </div>
-                        <div class="db-location-card" data-location="supabase">
-                            <div class="db-loc-icon">⚡</div>
-                            <div class="db-loc-info"><h5>Supabase</h5><p>Cloud PostgreSQL. Real SQL, free tier.</p></div>
-                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('supabase')">Configure</button>
-                        </div>
-                        <div class="db-location-card" data-location="turso">
-                            <div class="db-loc-icon">🚀</div>
-                            <div class="db-loc-info"><h5>Turso</h5><p>Edge SQLite. Fast, free 9GB.</p></div>
-                            <button class="btn-tiny" onclick="SQLDatabase && SQLDatabase.configureLocation('turso')">Configure</button>
-                        </div>
-                    </div>
-                </div>
+                <!-- Database Status -->
                 <div class="sql-status-bar">
                     <span class="sql-status-icon" id="sql-status-icon">⚪</span>
                     <span id="sql-status-text">Database not loaded</span>
                     <span id="sql-status-source"></span>
                 </div>
-                <p class="db-info-note">Load database from GitHub or create new to enable SQL queries.</p>
-                <div class="db-actions">
+                
+                <!-- Actions -->
+                <div class="db-actions" style="margin-bottom: 20px;">
                     <button class="btn-secondary" id="sql-load-github-btn">📥 Load from GitHub</button>
                     <button class="btn-secondary" id="sql-new-db-btn">➕ New Database</button>
                     <button class="btn-secondary" id="sql-save-github-btn" disabled>🐙 Save to GitHub</button>
+                    <button class="btn-secondary" id="sql-save-db-btn" disabled>💾 Save to File</button>
+                    <label class="btn-secondary" style="cursor:pointer;">📂 Load File<input type="file" id="sql-load-file" accept=".db,.sqlite,.sqlite3" style="display:none"></label>
+                </div>
+                
+                <!-- Query Editor -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">📝 SQL Query Editor</h4>
+                        <select id="sql-examples-select" style="padding: 6px 10px; background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 0.8rem;">
+                            <option value="">-- Example Queries --</option>
+                            <option value="select">SELECT template</option>
+                            <option value="create">CREATE TABLE</option>
+                            <option value="insert">INSERT rows</option>
+                            <option value="update">UPDATE rows</option>
+                            <option value="delete">DELETE rows</option>
+                        </select>
+                    </div>
+                    <textarea id="sql-query-input" placeholder="Enter SQL query... (Ctrl+Enter to run)" style="width: 100%; height: 100px; padding: 12px; background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-family: monospace; font-size: 0.9rem; resize: vertical;"></textarea>
+                    <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
+                        <button class="btn-primary" id="sql-run-btn" style="padding: 10px 20px;">▶️ Run Query</button>
+                        <button class="btn-secondary" id="sql-clear-btn">Clear</button>
+                        <span id="sql-query-time" style="color: var(--gray); font-size: 0.85rem;"></span>
+                    </div>
+                </div>
+                
+                <!-- Results -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">📊 Results</h4>
+                        <span id="sql-results-count" style="color: var(--gray); font-size: 0.85rem;"></span>
+                    </div>
+                    <div id="sql-results-container" style="background: var(--dark); border-radius: 8px; padding: 15px; max-height: 300px; overflow: auto;">
+                        <p style="color: var(--gray); text-align: center;">Run a query to see results</p>
+                    </div>
+                </div>
+                
+                <!-- Tables -->
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">📋 Tables</h4>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn-tiny" id="sql-refresh-tables-btn">🔄</button>
+                            <button class="btn-tiny" id="sql-create-table-btn">➕</button>
+                        </div>
+                    </div>
+                    <div id="sql-tables-list" style="background: var(--dark); border-radius: 8px; padding: 10px; max-height: 200px; overflow-y: auto;">
+                        <div class="empty-tables" style="color: var(--gray); text-align: center; padding: 15px;">No database loaded</div>
+                    </div>
+                </div>
+                
+                <!-- History -->
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="margin: 0;">📜 Query History</h4>
+                        <button class="btn-tiny" id="sql-clear-history-btn">🗑️ Clear</button>
+                    </div>
+                    <div id="sql-history-list" style="background: var(--dark); border-radius: 8px; padding: 10px; max-height: 150px; overflow-y: auto;">
+                        <div class="empty-history" style="color: var(--gray); text-align: center; padding: 15px;">No queries yet</div>
+                    </div>
                 </div>
             </div>
             <div id="admin-users-tab" class="admin-tab-content">

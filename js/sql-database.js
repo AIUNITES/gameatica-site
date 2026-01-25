@@ -658,12 +658,316 @@ const SQLDatabase = {
     } else {
       localStorage.removeItem('github_token');
     }
+  },
+  
+  // ==================== QUERY EDITOR ====================
+  
+  history: [],
+  HISTORY_KEY: 'gameatica_sql_history',
+  
+  bindQueryEditorEvents() {
+    document.getElementById('sql-run-btn')?.addEventListener('click', () => this.runQuery());
+    document.getElementById('sql-clear-btn')?.addEventListener('click', () => {
+      document.getElementById('sql-query-input').value = '';
+    });
+    document.getElementById('sql-examples-select')?.addEventListener('change', (e) => {
+      this.insertExampleQuery(e.target.value);
+      e.target.value = '';
+    });
+    document.getElementById('sql-refresh-tables-btn')?.addEventListener('click', () => this.refreshTables());
+    document.getElementById('sql-create-table-btn')?.addEventListener('click', () => this.showCreateTableDialog());
+    document.getElementById('sql-clear-history-btn')?.addEventListener('click', () => this.clearHistory());
+    document.getElementById('sql-save-db-btn')?.addEventListener('click', () => this.saveToFile());
+    document.getElementById('sql-load-file')?.addEventListener('change', (e) => this.loadFromFile(e.target.files[0]));
+    
+    // Ctrl+Enter to run
+    document.getElementById('sql-query-input')?.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        this.runQuery();
+      }
+    });
+  },
+  
+  runQuery() {
+    const input = document.getElementById('sql-query-input');
+    const query = input?.value.trim();
+    
+    if (!query) {
+      alert('Please enter a SQL query');
+      return;
+    }
+    
+    if (!this.db) {
+      this.createNewDatabase();
+    }
+    
+    const startTime = performance.now();
+    
+    try {
+      const results = this.db.exec(query);
+      const duration = (performance.now() - startTime).toFixed(2);
+      
+      document.getElementById('sql-query-time').textContent = `${duration}ms`;
+      this.displayResults(results);
+      this.addToHistory(query, true);
+      
+      if (this.isSchemaChange(query)) {
+        this.refreshTables();
+      }
+      
+      this.autoSave();
+      console.log('[SQLDatabase] Query executed:', query);
+      
+    } catch (error) {
+      console.error('[SQLDatabase] Query error:', error);
+      this.displayError(error.message);
+      this.addToHistory(query, false, error.message);
+    }
+  },
+  
+  isSchemaChange(query) {
+    const upper = query.toUpperCase();
+    return ['CREATE', 'DROP', 'ALTER', 'RENAME'].some(kw => upper.includes(kw));
+  },
+  
+  displayResults(results) {
+    const container = document.getElementById('sql-results-container');
+    const countEl = document.getElementById('sql-results-count');
+    
+    if (!results || results.length === 0) {
+      container.innerHTML = '<div style="color:#22c55e;text-align:center;">✅ Query executed successfully (no results)</div>';
+      countEl.textContent = '';
+      return;
+    }
+    
+    let html = '';
+    let totalRows = 0;
+    
+    results.forEach((result) => {
+      const { columns, values } = result;
+      totalRows += values.length;
+      
+      html += '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.85rem;">';
+      html += '<thead><tr>';
+      columns.forEach(col => {
+        html += `<th style="padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);color:var(--primary);">${this.escapeHtml(col)}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+      
+      values.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => {
+          const val = cell === null ? '<span style="color:var(--gray);">NULL</span>' : this.escapeHtml(String(cell));
+          html += `<td style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.05);">${val}</td>`;
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table></div>';
+    });
+    
+    container.innerHTML = html;
+    countEl.textContent = `${totalRows} row${totalRows !== 1 ? 's' : ''}`;
+  },
+  
+  displayError(message) {
+    const container = document.getElementById('sql-results-container');
+    container.innerHTML = `<div style="color:#ef4444;">❌ Error: ${this.escapeHtml(message)}</div>`;
+    document.getElementById('sql-results-count').textContent = '';
+  },
+  
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  },
+  
+  refreshTables() {
+    const container = document.getElementById('sql-tables-list');
+    if (!container) return;
+    
+    if (!this.db) {
+      container.innerHTML = '<div style="color:var(--gray);text-align:center;padding:15px;">No database loaded</div>';
+      return;
+    }
+    
+    try {
+      const result = this.db.exec("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name");
+      
+      if (!result.length || !result[0].values.length) {
+        container.innerHTML = '<div style="color:var(--gray);text-align:center;padding:15px;">No tables yet</div>';
+        return;
+      }
+      
+      let html = '';
+      result[0].values.forEach(([tableName]) => {
+        let rowCount = 0;
+        try {
+          const countResult = this.db.exec(`SELECT COUNT(*) FROM "${tableName}"`);
+          rowCount = countResult[0]?.values[0]?.[0] || 0;
+        } catch (e) {}
+        
+        html += `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:6px;">
+            <span>📋 ${this.escapeHtml(tableName)} <span style="color:var(--gray);font-size:0.8rem;">(${rowCount})</span></span>
+            <div style="display:flex;gap:5px;">
+              <button class="btn-tiny" onclick="SQLDatabase.selectAll('${tableName}')" title="SELECT *">👁️</button>
+              <button class="btn-tiny" onclick="SQLDatabase.showTableSchema('${tableName}')" title="Schema">📄</button>
+              <button class="btn-tiny" onclick="SQLDatabase.dropTable('${tableName}')" title="Drop" style="color:#ef4444;">🗑️</button>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    } catch (error) {
+      container.innerHTML = '<div style="color:var(--gray);text-align:center;">Error loading tables</div>';
+    }
+  },
+  
+  selectAll(tableName) {
+    document.getElementById('sql-query-input').value = `SELECT * FROM "${tableName}" LIMIT 100;`;
+    this.runQuery();
+  },
+  
+  showTableSchema(tableName) {
+    document.getElementById('sql-query-input').value = `PRAGMA table_info("${tableName}");`;
+    this.runQuery();
+  },
+  
+  dropTable(tableName) {
+    if (confirm(`Drop table "${tableName}"? This cannot be undone.`)) {
+      document.getElementById('sql-query-input').value = `DROP TABLE "${tableName}";`;
+      this.runQuery();
+    }
+  },
+  
+  showCreateTableDialog() {
+    const name = prompt('Table name:');
+    if (!name) return;
+    const cols = prompt('Columns (e.g., id INTEGER PRIMARY KEY, name TEXT):');
+    if (!cols) return;
+    document.getElementById('sql-query-input').value = `CREATE TABLE "${name}" (\n  ${cols}\n);`;
+    this.runQuery();
+  },
+  
+  insertExampleQuery(type) {
+    const examples = {
+      select: 'SELECT * FROM table_name WHERE condition LIMIT 10;',
+      create: `CREATE TABLE users (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL,\n  email TEXT UNIQUE,\n  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n);`,
+      insert: `INSERT INTO users (name, email) VALUES \n  ('John Doe', 'john@example.com'),\n  ('Jane Smith', 'jane@example.com');`,
+      update: `UPDATE users \nSET name = 'Updated Name' \nWHERE id = 1;`,
+      delete: `DELETE FROM users \nWHERE id = 1;`
+    };
+    if (examples[type]) {
+      document.getElementById('sql-query-input').value = examples[type];
+    }
+  },
+  
+  addToHistory(query, success, error = null) {
+    this.history.unshift({ query, success, error, timestamp: new Date().toISOString() });
+    this.history = this.history.slice(0, 50);
+    this.saveHistory();
+    this.renderHistory();
+  },
+  
+  saveHistory() {
+    localStorage.setItem(this.HISTORY_KEY, JSON.stringify(this.history));
+  },
+  
+  loadHistory() {
+    try {
+      const saved = localStorage.getItem(this.HISTORY_KEY);
+      if (saved) {
+        this.history = JSON.parse(saved);
+        this.renderHistory();
+      }
+    } catch (e) {
+      this.history = [];
+    }
+  },
+  
+  clearHistory() {
+    this.history = [];
+    this.saveHistory();
+    this.renderHistory();
+  },
+  
+  renderHistory() {
+    const container = document.getElementById('sql-history-list');
+    if (!container) return;
+    
+    if (!this.history.length) {
+      container.innerHTML = '<div style="color:var(--gray);text-align:center;padding:15px;">No queries yet</div>';
+      return;
+    }
+    
+    let html = '';
+    this.history.slice(0, 20).forEach((item, idx) => {
+      const icon = item.success ? '✅' : '❌';
+      const shortQuery = item.query.substring(0, 50) + (item.query.length > 50 ? '...' : '');
+      html += `
+        <div onclick="SQLDatabase.useHistoryItem(${idx})" style="display:flex;align-items:center;gap:8px;padding:8px;background:rgba(255,255,255,0.03);border-radius:6px;margin-bottom:4px;cursor:pointer;font-size:0.85rem;">
+          <span>${icon}</span>
+          <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(shortQuery)}</span>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  },
+  
+  useHistoryItem(index) {
+    if (this.history[index]) {
+      document.getElementById('sql-query-input').value = this.history[index].query;
+    }
+  },
+  
+  saveToFile() {
+    if (!this.db) {
+      alert('No database to save');
+      return;
+    }
+    const data = this.db.export();
+    const blob = new Blob([data], { type: 'application/x-sqlite3' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gameatica_db_${Date.now()}.db`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if (typeof App !== 'undefined' && App.showToast) {
+      App.showToast('💾 Database saved!', 'success');
+    }
+  },
+  
+  async loadFromFile(file) {
+    if (!file) return;
+    try {
+      const buffer = await file.arrayBuffer();
+      const data = new Uint8Array(buffer);
+      this.db = new this.SQL.Database(data);
+      this.isLoaded = true;
+      this.ensureTables();
+      this.updateStatus(`Loaded: ${file.name}`, 'success');
+      this.refreshTables();
+      this.autoSave();
+      document.getElementById('sql-save-db-btn')?.removeAttribute('disabled');
+      document.getElementById('sql-save-github-btn')?.removeAttribute('disabled');
+    } catch (error) {
+      alert('Error loading file: ' + error.message);
+    }
   }
 };
 
 // Initialize when DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => SQLDatabase.init(), 100);
+  setTimeout(() => {
+    SQLDatabase.init();
+    SQLDatabase.bindQueryEditorEvents();
+    SQLDatabase.loadHistory();
+    SQLDatabase.refreshTables();
+  }, 100);
 });
 
 window.SQLDatabase = SQLDatabase;
