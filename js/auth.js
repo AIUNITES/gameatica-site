@@ -96,6 +96,18 @@ const Auth = {
       
       SQLDatabase.autoSave();
       console.log('[Auth] User saved to SQL database:', user.username);
+      
+      // Auto-sync to GitHub if token is available (so other sites can see the user)
+      const token = SQLDatabase.getGitHubToken();
+      if (token) {
+        console.log('[Auth] Auto-syncing new user to GitHub...');
+        SQLDatabase.saveToGitHub().then(() => {
+          console.log('[Auth] User synced to GitHub!');
+        }).catch(e => {
+          console.warn('[Auth] GitHub sync failed:', e.message);
+        });
+      }
+      
       return true;
     } catch (e) {
       console.warn('[Auth] Failed to save user to SQL:', e.message);

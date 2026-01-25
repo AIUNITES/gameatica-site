@@ -55,12 +55,20 @@ const SQLDatabase = {
       console.log('[SQLDatabase] sql.js loaded');
       
       this.loadLocationConfig();
-      await this.loadFromStorage();
       
-      // Auto-load from GitHub if not on localhost and no local DB
-      if (!this.isLoaded && !this.isLocalhost()) {
-        console.log('[SQLDatabase] Attempting auto-load from GitHub...');
-        await this.autoLoadFromGitHub();
+      // When online (not localhost), ALWAYS try GitHub first for shared database
+      if (!this.isLocalhost()) {
+        console.log('[SQLDatabase] Online mode - loading shared database from GitHub...');
+        const loaded = await this.autoLoadFromGitHub();
+        if (!loaded) {
+          // Fallback to localStorage if GitHub fails
+          console.log('[SQLDatabase] GitHub load failed, trying localStorage...');
+          await this.loadFromStorage();
+        }
+      } else {
+        // Localhost: use localStorage (development mode)
+        console.log('[SQLDatabase] Localhost mode - using local database');
+        await this.loadFromStorage();
       }
       
       // Ensure tables exist
@@ -89,6 +97,20 @@ const SQLDatabase = {
     if (!this.db) return;
     
     try {
+      // Create users table (shared across all AIUNITES sites)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          display_name TEXT,
+          email TEXT,
+          role TEXT DEFAULT 'user',
+          site TEXT DEFAULT 'Gameatica',
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      
       // Create game_scores table
       this.db.run(`
         CREATE TABLE IF NOT EXISTS game_scores (
@@ -106,11 +128,13 @@ const SQLDatabase = {
       `);
       
       // Create indexes for fast queries
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
+      this.db.run(`CREATE INDEX IF NOT EXISTS idx_users_site ON users(site)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_scores_game ON game_scores(game_id, score DESC)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_scores_user ON game_scores(username, game_id)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_scores_site ON game_scores(site, game_id)`);
       
-      console.log('[SQLDatabase] Tables ensured');
+      console.log('[SQLDatabase] Tables ensured (users + game_scores)');
       this.autoSave();
       
     } catch (error) {
@@ -854,15 +878,27 @@ const SQLDatabase = {
   
   insertExampleQuery(type) {
     const examples = {
+      // User queries
+      users: 'SELECT id, username, display_name, email, role, site, created_at FROM users ORDER BY created_at DESC LIMIT 50;',
+      tables: "SELECT name, type FROM sqlite_master WHERE type='table' ORDER BY name;",
+      count: 'SELECT COUNT(*) as total_users FROM users;',
+      siteusers: `SELECT site, COUNT(*) as user_count FROM users GROUP BY site ORDER BY user_count DESC;`,
+      // Game score queries
+      scores: 'SELECT * FROM game_scores ORDER BY created_at DESC LIMIT 50;',
+      // Generic templates
       select: 'SELECT * FROM table_name WHERE condition LIMIT 10;',
-      create: `CREATE TABLE users (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL,\n  email TEXT UNIQUE,\n  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n);`,
-      insert: `INSERT INTO users (name, email) VALUES \n  ('John Doe', 'john@example.com'),\n  ('Jane Smith', 'jane@example.com');`,
-      update: `UPDATE users \nSET name = 'Updated Name' \nWHERE id = 1;`,
-      delete: `DELETE FROM users \nWHERE id = 1;`
+      create: `CREATE TABLE example (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  name TEXT NOT NULL,\n  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n);`,
+      insert: `INSERT INTO table_name (col1, col2) VALUES \n  ('value1', 'value2');`
     };
     if (examples[type]) {
       document.getElementById('sql-query-input').value = examples[type];
     }
+  },
+  
+  // Quick query - insert AND run immediately
+  quickQuery(type) {
+    this.insertExampleQuery(type);
+    this.runQuery();
   },
   
   addToHistory(query, success, error = null) {

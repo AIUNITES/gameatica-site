@@ -596,14 +596,22 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <h4 style="margin: 0;">📝 SQL Query Editor</h4>
                         <select id="sql-examples-select" style="padding: 6px 10px; background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: white; font-size: 0.8rem;">
-                            <option value="">-- Example Queries --</option>
+                            <option value="">-- More Queries --</option>
                             <option value="select">SELECT template</option>
                             <option value="create">CREATE TABLE</option>
                             <option value="insert">INSERT rows</option>
-                            <option value="update">UPDATE rows</option>
-                            <option value="delete">DELETE rows</option>
                         </select>
                     </div>
+                    
+                    <!-- Quick Query Buttons -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+                        <button class="btn-tiny" onclick="SQLDatabase.quickQuery('users')" style="padding: 6px 12px;">👥 Show Users</button>
+                        <button class="btn-tiny" onclick="SQLDatabase.quickQuery('tables')" style="padding: 6px 12px;">📋 List Tables</button>
+                        <button class="btn-tiny" onclick="SQLDatabase.quickQuery('count')" style="padding: 6px 12px;">🔢 Count Users</button>
+                        <button class="btn-tiny" onclick="SQLDatabase.quickQuery('siteusers')" style="padding: 6px 12px;">🎮 Users by Site</button>
+                        <button class="btn-tiny" onclick="SQLDatabase.quickQuery('scores')" style="padding: 6px 12px;">🏆 Game Scores</button>
+                    </div>
+                    
                     <textarea id="sql-query-input" placeholder="Enter SQL query... (Ctrl+Enter to run)" style="width: 100%; height: 100px; padding: 12px; background: var(--dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-family: monospace; font-size: 0.9rem; resize: vertical;"></textarea>
                     <div style="display: flex; gap: 10px; margin-top: 10px; align-items: center;">
                         <button class="btn-primary" id="sql-run-btn" style="padding: 10px 20px;">▶️ Run Query</button>
