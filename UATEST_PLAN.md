@@ -256,6 +256,25 @@
 | Conflict highlighting | ✅ |
 | Timer | ✅ |
 
+### 🚀 Star Trader
+| Feature | Status |
+|---------|--------|
+| Galaxy map (14 systems) | ✅ |
+| Interactive canvas map | ✅ |
+| 12 tradeable commodities | ✅ |
+| Location-based pricing | ✅ |
+| Ship upgrades (14 types) | ✅ |
+| Cargo, fuel, hull management | ✅ |
+| Combat system | ✅ |
+| Random travel events | ✅ |
+| Discovery/exploration | ✅ |
+| System tooltips | ✅ |
+| Trade scanner upgrade | ✅ |
+| Persistent save | ✅ |
+| Day/time tracking | ✅ |
+| Refuel/repair at stations | ✅ |
+| Hyperspace travel animation | ✅ |
+
 ---
 
 ## localStorage Keys
@@ -266,13 +285,14 @@
 | `gameatica_[game]_scores` | High scores array | Per game |
 | `aiunites_clouddb_enabled` | Cloud sync toggle | CloudDB |
 | `aiunites_clouddb_apiUrl` | Cloud API URL | CloudDB |
+| `gameatica_startrader_save` | Star Trader game state | Star Trader |
 
 ---
 
 ## Test Scenarios
 
 ### Hub Tests
-- [ ] All 18 game cards display correctly
+- [ ] All 19 game cards display correctly
 - [ ] Category filter buttons work
 - [ ] Player name changes and persists
 - [ ] Play count updates after playing games
@@ -308,12 +328,30 @@
 
 ---
 
+## Copyright Validation
+
+| Element | Status | Notes |
+|---------|--------|-------|
+| Game concepts | ✅ Clear | Genre mechanics (trading, upgrades) not copyrightable |
+| All code | ✅ Original | Written from scratch, vanilla JS |
+| System/location names | ✅ Clear | Real astronomical bodies (public domain) or fictional |
+| Commodity names | ✅ Generic | Common terms (Food, Ore, Weapons, etc.) |
+| UI/visual design | ✅ Original | Custom designs, no copied assets |
+| Sound/music | ✅ Clear | Web Audio API generated tones, no samples |
+| Fonts | ✅ Licensed | Google Fonts (Inter, Orbitron) - open license |
+| Icons/emoji | ✅ Clear | Native system emoji |
+
+**No assets copied from:** Elite Dangerous, No Man's Sky, Freelancer, EVE Online, or any other games.
+
+---
+
 ## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0.0 | Jan 17, 2026 | Initial landing page |
-| 2.0.0 | Jan 25, 2026 | Full arcade with 13 games |
+| 2.0.0 | Jan 25, 2026 | Full arcade with 18 games |
+| 2.1.0 | Jan 25, 2026 | Added Star Trader (19 games total) |
 
 ---
 
