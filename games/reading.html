@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Reading Sprint - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📰</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 20px; }
+        .passage-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 15px auto; max-width: 650px; font-size: 1.05rem; line-height: 1.9; text-align: left; border-left: 4px solid var(--primary); max-height: 250px; overflow-y: auto; }
+        .question-box { background: rgba(239,68,68,0.1); border-radius: 10px; padding: 15px; margin: 15px auto; max-width: 600px; font-size: 1.1rem; font-weight: 600; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 550px; margin: 0 auto; }
+        .option-btn { padding: 14px 18px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 0.95rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 15px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.9rem; color: var(--gray-light); max-width: 550px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+        .timer { font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>📰 Reading Sprint</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="passage-box" id="passageBox"></div>
+                <div class="question-box" id="questionBox"></div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next Passage →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Read the short passage carefully</li>
+                <li>Answer the comprehension question</li>
+                <li>Build streaks for bonus points!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'reading';
+        let score = 0, correctCount = 0, streak = 0, currentPassage = null, answered = false;
+        
+        const PASSAGES = [
+            { text: 'The Amazon rainforest produces about 20% of the world\'s oxygen, earning it the nickname "the lungs of the Earth." However, deforestation threatens this vital ecosystem. Every minute, an area the size of a football field is cleared. Scientists warn that if destruction continues at this rate, the rainforest could reach a tipping point where it can no longer sustain itself.', question: 'Why is the Amazon rainforest called "the lungs of the Earth"?', answer: 'It produces a significant portion of the world\'s oxygen', wrong: ['It is shaped like human lungs', 'It helps filter water pollution', 'It is the largest forest on Earth'], explanation: 'The passage states the Amazon "produces about 20% of the world\'s oxygen," which is why it has this nickname.' },
+            { text: 'Marie Curie was the first woman to win a Nobel Prize and remains the only person to win Nobel Prizes in two different sciences—physics and chemistry. Despite facing discrimination as a woman in science, she made groundbreaking discoveries about radioactivity. Sadly, her extensive work with radioactive materials, before safety protocols existed, likely contributed to her death from aplastic anemia in 1934.', question: 'What made Marie Curie\'s Nobel Prize achievements unique?', answer: 'She won Nobel Prizes in two different scientific fields', wrong: ['She was the youngest winner ever', 'She won three Nobel Prizes', 'She shared her prize with her husband'], explanation: 'The passage states she "remains the only person to win Nobel Prizes in two different sciences—physics and chemistry."' },
+            { text: 'Octopuses are considered among the most intelligent invertebrates. They can solve puzzles, open jars, and even recognize individual human faces. Their intelligence is distributed throughout their bodies—about two-thirds of their neurons are in their arms, which can act somewhat independently. Some researchers suggest octopuses may even experience something like emotions.', question: 'What is unusual about how octopus intelligence is organized?', answer: 'Most of their neurons are in their arms, not their brain', wrong: ['They have the largest brains of any animal', 'Their intelligence only develops with age', 'They share a collective consciousness'], explanation: 'The passage explains that "about two-thirds of their neurons are in their arms, which can act somewhat independently."' },
+            { text: 'The Great Wall of China is often said to be visible from space, but this is actually a myth. The wall, while incredibly long at over 13,000 miles, is only about 15-30 feet wide—too narrow to be seen with the naked eye from orbit. Astronauts have confirmed they cannot distinguish the wall from space without aid of zoom lenses or other optical devices.', question: 'What does the passage reveal about a common belief regarding the Great Wall?', answer: 'The claim that it\'s visible from space is false', wrong: ['It is actually longer than people think', 'It was built more recently than believed', 'It was constructed by multiple countries'], explanation: 'The passage calls it "a myth" and explains the wall is "too narrow to be seen with the naked eye from orbit."' },
+            { text: 'Honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that was still perfectly edible. Honey\'s longevity comes from its unique chemical properties: its low moisture content and acidic pH create an environment where bacteria cannot survive. The bees also add an enzyme that produces small amounts of hydrogen peroxide, further preventing spoilage.', question: 'According to the passage, why doesn\'t honey spoil?', answer: 'Its chemical properties prevent bacterial growth', wrong: ['It is kept in sealed containers', 'Bees add special preservatives', 'It becomes petrified over time'], explanation: 'The passage explains that "low moisture content and acidic pH create an environment where bacteria cannot survive."' },
+            { text: 'Sleep is essential for memory consolidation. During deep sleep, the brain replays and strengthens neural connections formed during the day. Studies show that students who sleep after studying retain information better than those who stay awake. Pulling an "all-nighter" before an exam can actually hurt performance, as the brain hasn\'t had time to properly process and store the learned material.', question: 'What happens to memories during deep sleep?', answer: 'The brain strengthens neural connections from the day', wrong: ['Memories are temporarily deleted', 'New memories cannot be formed', 'The brain stops processing information'], explanation: 'The passage states that "during deep sleep, the brain replays and strengthens neural connections formed during the day."' },
+            { text: 'Venus rotates in the opposite direction from most planets in our solar system—a phenomenon called retrograde rotation. This means the sun rises in the west and sets in the east on Venus. Additionally, Venus rotates so slowly that a single day on Venus (one complete rotation) is longer than a Venusian year (one orbit around the sun).', question: 'What is unusual about how Venus rotates?', answer: 'It spins in the opposite direction of most planets', wrong: ['It doesn\'t rotate at all', 'It rotates faster than any other planet', 'It rotates on its side like Uranus'], explanation: 'The passage explains Venus has "retrograde rotation," spinning opposite to most planets, making the sun rise in the west.' },
+            { text: 'The human body contains roughly 37.2 trillion cells, but only about 43% of them are actually human. The rest are bacteria, viruses, and other microorganisms that make up our microbiome. Far from being harmful, most of these microbes are essential for our health—helping digest food, producing vitamins, and training our immune systems.', question: 'What surprising fact does the passage reveal about human cells?', answer: 'Less than half of our body\'s cells are human', wrong: ['We have more cells than any other species', 'All foreign cells in our body are harmful', 'Our cells are replaced every seven years'], explanation: 'The passage states "only about 43% of them are actually human" with the rest being microorganisms.' }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentPassage = PASSAGES[Math.floor(Math.random() * PASSAGES.length)];
+            document.getElementById('passageBox').textContent = currentPassage.text;
+            document.getElementById('questionBox').textContent = currentPassage.question;
+            
+            const options = [currentPassage.answer, ...currentPassage.wrong].sort(() => Math.random() - 0.5);
+            currentPassage.correctIndex = options.indexOf(currentPassage.answer);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentPassage.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 150 + streak * 30;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentPassage.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 Explanation:</strong> ${currentPassage.explanation}`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

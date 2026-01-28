@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Prefix/Suffix Pro - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .affix-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 400px; }
+        .affix-box .affix { font-size: 2.5rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .affix-box .type-label { color: var(--gray); font-size: 0.9rem; margin-top: 5px; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 450px; margin: 0 auto; }
+        .option-btn { padding: 15px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .examples { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; max-width: 450px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .examples.visible { display: block; }
+        .examples .word-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .examples .word-tag { background: rgba(239,68,68,0.2); padding: 4px 12px; border-radius: 15px; font-size: 0.9rem; color: var(--white); }
+        .mode-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+        .mode-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .mode-btn:hover { border-color: var(--primary); }
+        .mode-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🧩 Prefix/Suffix Pro</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="prefixes">Prefixes</button>
+            <button class="mode-btn" data-mode="suffixes">Suffixes</button>
+            <button class="mode-btn" data-mode="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="affix-box">
+                    <div class="affix" id="affixDisplay">UN-</div>
+                    <div class="type-label" id="typeLabel">Prefix</div>
+                </div>
+                <div class="question-text">What does this affix mean?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="examples" id="examples"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Common Affixes</h3>
+            <ul>
+                <li><strong>Prefixes</strong> come at the beginning (un-, re-, pre-)</li>
+                <li><strong>Suffixes</strong> come at the end (-tion, -ment, -able)</li>
+                <li>Learning affixes helps decode new words!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'affixes';
+        let score = 0, correctCount = 0, streak = 0, mode = 'prefixes', currentAffix = null, answered = false;
+        
+        const AFFIXES = {
+            prefixes: [
+                { affix: 'UN-', meaning: 'not, opposite of', wrong: ['again', 'before', 'after'], examples: ['unhappy', 'unlock', 'unfair'] },
+                { affix: 'RE-', meaning: 'again, back', wrong: ['not', 'before', 'many'], examples: ['redo', 'return', 'rewrite'] },
+                { affix: 'PRE-', meaning: 'before', wrong: ['after', 'not', 'again'], examples: ['preview', 'predict', 'prehistoric'] },
+                { affix: 'DIS-', meaning: 'not, opposite', wrong: ['together', 'again', 'after'], examples: ['disagree', 'disappear', 'disable'] },
+                { affix: 'MIS-', meaning: 'wrongly, badly', wrong: ['not', 'before', 'together'], examples: ['mistake', 'misunderstand', 'mislead'] },
+                { affix: 'ANTI-', meaning: 'against, opposite', wrong: ['for', 'before', 'after'], examples: ['antiwar', 'antifreeze', 'antibody'] },
+                { affix: 'SUB-', meaning: 'under, below', wrong: ['over', 'beside', 'through'], examples: ['submarine', 'subway', 'subtitle'] },
+                { affix: 'SUPER-', meaning: 'above, beyond', wrong: ['under', 'before', 'beside'], examples: ['superhero', 'supernatural', 'supervise'] },
+                { affix: 'INTER-', meaning: 'between, among', wrong: ['above', 'through', 'around'], examples: ['international', 'interact', 'internet'] },
+                { affix: 'TRANS-', meaning: 'across, through', wrong: ['around', 'under', 'beside'], examples: ['transport', 'transfer', 'transform'] },
+                { affix: 'BI-', meaning: 'two', wrong: ['one', 'three', 'many'], examples: ['bicycle', 'biweekly', 'bilingual'] },
+                { affix: 'TRI-', meaning: 'three', wrong: ['two', 'four', 'many'], examples: ['triangle', 'tricycle', 'tripod'] }
+            ],
+            suffixes: [
+                { affix: '-TION/-SION', meaning: 'act or state of', wrong: ['full of', 'able to', 'without'], examples: ['action', 'decision', 'creation'] },
+                { affix: '-MENT', meaning: 'state or result', wrong: ['full of', 'one who', 'able to'], examples: ['movement', 'agreement', 'excitement'] },
+                { affix: '-ABLE/-IBLE', meaning: 'capable of being', wrong: ['full of', 'state of', 'one who'], examples: ['readable', 'flexible', 'lovable'] },
+                { affix: '-FUL', meaning: 'full of', wrong: ['without', 'able to', 'state of'], examples: ['helpful', 'beautiful', 'careful'] },
+                { affix: '-LESS', meaning: 'without', wrong: ['full of', 'able to', 'state of'], examples: ['hopeless', 'careless', 'fearless'] },
+                { affix: '-LY', meaning: 'in a manner of', wrong: ['full of', 'state of', 'one who'], examples: ['quickly', 'happily', 'slowly'] },
+                { affix: '-ER/-OR', meaning: 'one who', wrong: ['state of', 'full of', 'able to'], examples: ['teacher', 'actor', 'writer'] },
+                { affix: '-IST', meaning: 'one who practices', wrong: ['state of', 'without', 'able to'], examples: ['artist', 'scientist', 'pianist'] },
+                { affix: '-NESS', meaning: 'state or quality', wrong: ['one who', 'able to', 'full of'], examples: ['happiness', 'darkness', 'kindness'] },
+                { affix: '-IZE/-ISE', meaning: 'to make or become', wrong: ['full of', 'without', 'one who'], examples: ['realize', 'organize', 'memorize'] },
+                { affix: '-OUS/-IOUS', meaning: 'full of, having', wrong: ['without', 'able to', 'one who'], examples: ['famous', 'curious', 'nervous'] },
+                { affix: '-AL/-IAL', meaning: 'relating to', wrong: ['without', 'able to', 'state of'], examples: ['musical', 'official', 'natural'] }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('examples').classList.remove('visible');
+            
+            let affixes;
+            if (mode === 'mixed') {
+                affixes = [...AFFIXES.prefixes, ...AFFIXES.suffixes];
+            } else {
+                affixes = AFFIXES[mode];
+            }
+            
+            currentAffix = affixes[Math.floor(Math.random() * affixes.length)];
+            const isPrefix = AFFIXES.prefixes.includes(currentAffix);
+            
+            document.getElementById('affixDisplay').textContent = currentAffix.affix;
+            document.getElementById('typeLabel').textContent = isPrefix ? 'Prefix' : 'Suffix';
+            
+            const options = [currentAffix.meaning, ...currentAffix.wrong].sort(() => Math.random() - 0.5);
+            currentAffix.correctIndex = options.indexOf(currentAffix.meaning);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentAffix.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentAffix.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('examples').innerHTML = `<strong>${currentAffix.affix}</strong> = "${currentAffix.meaning}"<div class="word-list">${currentAffix.examples.map(w => `<span class="word-tag">${w}</span>`).join('')}</div>`;
+            document.getElementById('examples').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = `💡 Example: ${currentAffix.examples[0]}`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

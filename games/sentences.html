@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sentence Builder - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗️</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 20px; background: var(--dark); border-radius: 12px; margin: 20px auto; max-width: 600px; min-height: 70px; }
+        .word-chip { padding: 10px 18px; background: rgba(239,68,68,0.2); border: 2px solid var(--primary); border-radius: 25px; color: var(--white); font-size: 1.1rem; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .word-chip:hover { transform: scale(1.05); background: rgba(239,68,68,0.3); }
+        .word-chip.used { opacity: 0.3; cursor: not-allowed; }
+        .sentence-area { min-height: 80px; padding: 20px; background: var(--dark); border-radius: 12px; margin: 20px auto; max-width: 600px; border: 2px dashed rgba(255,255,255,0.2); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center; }
+        .sentence-area .word-chip { background: var(--gradient); border-color: transparent; }
+        .sentence-area.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        .sentence-area.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.1); }
+        .placeholder-text { color: var(--gray); font-style: italic; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .correct-answer { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 1rem; color: var(--gray-light); max-width: 600px; margin-left: auto; margin-right: auto; display: none; }
+        .correct-answer.visible { display: block; }
+        .timer-bar { height: 6px; background: var(--dark); border-radius: 3px; margin: 0 auto 20px; max-width: 600px; overflow: hidden; }
+        .timer-fill { height: 100%; background: var(--gradient); transition: width 0.1s linear; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🏗️ Sentence Builder</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <p style="color: var(--gray-light); margin-bottom: 10px;">Arrange the words to form a correct sentence:</p>
+                <div class="sentence-area" id="sentenceArea">
+                    <span class="placeholder-text">Click words to build your sentence...</span>
+                </div>
+                <div class="word-bank" id="wordBank"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="correct-answer" id="correctAnswer"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="clearBtn">🗑️ Clear</button>
+            <button class="btn btn-primary" id="checkBtn">✓ Check</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Click words to add them to your sentence</li>
+                <li>Click words in the sentence area to remove them</li>
+                <li>Don't forget capitalization and punctuation!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'sentences';
+        let score = 0, correctCount = 0, streak = 0, currentSentence = null, answered = false, selectedWords = [];
+        
+        const SENTENCES = [
+            { correct: 'The quick brown fox jumps over the lazy dog.', words: ['The', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog.'] },
+            { correct: 'She sells seashells by the seashore.', words: ['She', 'sells', 'seashells', 'by', 'the', 'seashore.'] },
+            { correct: 'A journey of a thousand miles begins with a single step.', words: ['A', 'journey', 'of', 'a', 'thousand', 'miles', 'begins', 'with', 'a', 'single', 'step.'] },
+            { correct: 'The early bird catches the worm.', words: ['The', 'early', 'bird', 'catches', 'the', 'worm.'] },
+            { correct: 'Knowledge is power.', words: ['Knowledge', 'is', 'power.'] },
+            { correct: 'Actions speak louder than words.', words: ['Actions', 'speak', 'louder', 'than', 'words.'] },
+            { correct: 'Practice makes perfect.', words: ['Practice', 'makes', 'perfect.'] },
+            { correct: 'Time flies when you are having fun.', words: ['Time', 'flies', 'when', 'you', 'are', 'having', 'fun.'] },
+            { correct: 'Every cloud has a silver lining.', words: ['Every', 'cloud', 'has', 'a', 'silver', 'lining.'] },
+            { correct: 'Better late than never.', words: ['Better', 'late', 'than', 'never.'] },
+            { correct: 'All that glitters is not gold.', words: ['All', 'that', 'glitters', 'is', 'not', 'gold.'] },
+            { correct: 'Where there is a will, there is a way.', words: ['Where', 'there', 'is', 'a', 'will,', 'there', 'is', 'a', 'way.'] },
+            { correct: 'An apple a day keeps the doctor away.', words: ['An', 'apple', 'a', 'day', 'keeps', 'the', 'doctor', 'away.'] },
+            { correct: 'Rome was not built in a day.', words: ['Rome', 'was', 'not', 'built', 'in', 'a', 'day.'] },
+            { correct: 'The pen is mightier than the sword.', words: ['The', 'pen', 'is', 'mightier', 'than', 'the', 'sword.'] },
+            { correct: 'Curiosity killed the cat.', words: ['Curiosity', 'killed', 'the', 'cat.'] },
+            { correct: 'Honesty is the best policy.', words: ['Honesty', 'is', 'the', 'best', 'policy.'] },
+            { correct: 'Two wrongs do not make a right.', words: ['Two', 'wrongs', 'do', 'not', 'make', 'a', 'right.'] }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            selectedWords = [];
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('checkBtn').style.display = 'inline-flex';
+            document.getElementById('clearBtn').style.display = 'inline-flex';
+            document.getElementById('correctAnswer').classList.remove('visible');
+            document.getElementById('sentenceArea').className = 'sentence-area';
+            
+            currentSentence = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
+            const shuffled = [...currentSentence.words].sort(() => Math.random() - 0.5);
+            
+            renderWordBank(shuffled);
+            renderSentenceArea();
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function renderWordBank(words) {
+            document.getElementById('wordBank').innerHTML = words.map((word, i) => 
+                `<span class="word-chip" data-index="${i}" data-word="${word}">${word}</span>`
+            ).join('');
+            
+            document.querySelectorAll('#wordBank .word-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    if (answered || chip.classList.contains('used')) return;
+                    chip.classList.add('used');
+                    selectedWords.push({ word: chip.dataset.word, index: chip.dataset.index });
+                    renderSentenceArea();
+                });
+            });
+        }
+        
+        function renderSentenceArea() {
+            const area = document.getElementById('sentenceArea');
+            if (selectedWords.length === 0) {
+                area.innerHTML = '<span class="placeholder-text">Click words to build your sentence...</span>';
+            } else {
+                area.innerHTML = selectedWords.map((item, i) => 
+                    `<span class="word-chip" data-pos="${i}">${item.word}</span>`
+                ).join('');
+                
+                document.querySelectorAll('#sentenceArea .word-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        if (answered) return;
+                        const pos = parseInt(chip.dataset.pos);
+                        const removed = selectedWords.splice(pos, 1)[0];
+                        document.querySelector(`#wordBank .word-chip[data-index="${removed.index}"]`).classList.remove('used');
+                        renderSentenceArea();
+                    });
+                });
+            }
+        }
+        
+        function checkAnswer() {
+            if (answered || selectedWords.length === 0) return;
+            answered = true;
+            
+            const userSentence = selectedWords.map(w => w.word).join(' ');
+            const isCorrect = userSentence === currentSentence.correct;
+            
+            document.getElementById('checkBtn').style.display = 'none';
+            document.getElementById('clearBtn').style.display = 'none';
+            
+            if (isCorrect) {
+                document.getElementById('sentenceArea').classList.add('correct');
+                correctCount++; streak++;
+                const points = 150 + streak * 25;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Perfect! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                document.getElementById('sentenceArea').classList.add('wrong');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Not quite right';
+                document.getElementById('feedback').className = 'feedback wrong';
+                document.getElementById('correctAnswer').innerHTML = `<strong>Correct sentence:</strong> ${currentSentence.correct}`;
+                document.getElementById('correctAnswer').classList.add('visible');
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function clearSentence() {
+            if (answered) return;
+            selectedWords = [];
+            document.querySelectorAll('#wordBank .word-chip').forEach(chip => chip.classList.remove('used'));
+            renderSentenceArea();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+        document.getElementById('clearBtn').addEventListener('click', clearSentence);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

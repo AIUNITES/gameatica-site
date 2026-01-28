@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Sentence Types - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❓</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .sentence-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 550px; font-size: 1.4rem; line-height: 1.6; border-left: 4px solid var(--primary); }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 500px; margin: 0 auto; }
+        .option-btn { padding: 18px 15px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 500px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>❓ Sentence Types</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="sentence-box" id="sentenceBox">"The sun is shining today."</div>
+                <div class="question-text">What type of sentence is this?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Four Sentence Types</h3>
+            <ul>
+                <li><strong>Declarative:</strong> Makes a statement (ends with .)</li>
+                <li><strong>Interrogative:</strong> Asks a question (ends with ?)</li>
+                <li><strong>Imperative:</strong> Gives a command (ends with . or !)</li>
+                <li><strong>Exclamatory:</strong> Shows strong emotion (ends with !)</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'senttypes';
+        let score = 0, correctCount = 0, streak = 0, currentProblem = null, answered = false;
+        
+        const SENTENCES = [
+            { sentence: 'The cat is sleeping on the couch.', type: 'Declarative', hint: 'Is it stating a fact?', explanation: 'This is a declarative sentence - it makes a statement and ends with a period.' },
+            { sentence: 'What time does the movie start?', type: 'Interrogative', hint: 'Does it ask something?', explanation: 'This is an interrogative sentence - it asks a question and ends with a question mark.' },
+            { sentence: 'Please close the door behind you.', type: 'Imperative', hint: 'Is someone being told to do something?', explanation: 'This is an imperative sentence - it gives a command or makes a request.' },
+            { sentence: 'What a beautiful sunset!', type: 'Exclamatory', hint: 'Does it express strong feeling?', explanation: 'This is an exclamatory sentence - it expresses strong emotion and ends with an exclamation mark.' },
+            { sentence: 'She won first place in the competition.', type: 'Declarative', hint: 'Is it stating a fact?', explanation: 'This is a declarative sentence - it states a fact about what happened.' },
+            { sentence: 'Have you finished your homework?', type: 'Interrogative', hint: 'Does it ask something?', explanation: 'This is an interrogative sentence - it asks whether something is done.' },
+            { sentence: 'Stop running in the hallway!', type: 'Imperative', hint: 'Is someone being told to do something?', explanation: 'This is an imperative sentence - it commands someone to stop an action.' },
+            { sentence: 'I can\'t believe we won the championship!', type: 'Exclamatory', hint: 'Does it express strong feeling?', explanation: 'This is an exclamatory sentence - it expresses excitement and disbelief.' },
+            { sentence: 'The library opens at nine o\'clock.', type: 'Declarative', hint: 'Is it stating a fact?', explanation: 'This is a declarative sentence - it provides information about when something opens.' },
+            { sentence: 'Where did you put my keys?', type: 'Interrogative', hint: 'Does it ask something?', explanation: 'This is an interrogative sentence - it asks for the location of something.' },
+            { sentence: 'Turn off the lights when you leave.', type: 'Imperative', hint: 'Is someone being told to do something?', explanation: 'This is an imperative sentence - it tells someone to perform an action.' },
+            { sentence: 'That was the scariest movie I\'ve ever seen!', type: 'Exclamatory', hint: 'Does it express strong feeling?', explanation: 'This is an exclamatory sentence - it expresses a strong reaction to the movie.' },
+            { sentence: 'Water boils at 100 degrees Celsius.', type: 'Declarative', hint: 'Is it stating a fact?', explanation: 'This is a declarative sentence - it states a scientific fact.' },
+            { sentence: 'Would you like some coffee?', type: 'Interrogative', hint: 'Does it ask something?', explanation: 'This is an interrogative sentence - it offers something by asking a question.' },
+            { sentence: 'Be careful with that knife.', type: 'Imperative', hint: 'Is someone being told to do something?', explanation: 'This is an imperative sentence - it warns someone to take care.' },
+            { sentence: 'How wonderful this news is!', type: 'Exclamatory', hint: 'Does it express strong feeling?', explanation: 'This is an exclamatory sentence - it expresses joy about the news.' },
+            { sentence: 'Mix the ingredients until smooth.', type: 'Imperative', hint: 'Is someone being told to do something?', explanation: 'This is an imperative sentence - it gives instructions for a recipe.' },
+            { sentence: 'Why is the sky blue?', type: 'Interrogative', hint: 'Does it ask something?', explanation: 'This is an interrogative sentence - it asks for an explanation of a phenomenon.' }
+        ];
+        
+        const OPTIONS = ['Declarative', 'Interrogative', 'Imperative', 'Exclamatory'];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentProblem = SENTENCES[Math.floor(Math.random() * SENTENCES.length)];
+            document.getElementById('sentenceBox').textContent = `"${currentProblem.sentence}"`;
+            
+            const shuffled = [...OPTIONS].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = shuffled.indexOf(currentProblem.type);
+            
+            document.getElementById('optionsGrid').innerHTML = shuffled.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 ${currentProblem.explanation}</strong>`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

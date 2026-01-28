@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Main Idea Master - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💡</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 20px; }
+        .passage-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 15px auto; max-width: 650px; font-size: 1.05rem; line-height: 1.9; text-align: left; border-left: 4px solid var(--primary); }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; font-weight: 600; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 600px; margin: 0 auto; }
+        .option-btn { padding: 14px 18px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 0.95rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 15px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.9rem; color: var(--gray-light); max-width: 600px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>💡 Main Idea Master</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="passage-box" id="passageBox"></div>
+                <div class="question-text">What is the MAIN IDEA of this paragraph?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Finding the Main Idea</h3>
+            <ul>
+                <li>The main idea is what the whole paragraph is about</li>
+                <li>It's different from details—those support the main idea</li>
+                <li>Ask: "What is the author's main point?"</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'mainidea';
+        let score = 0, correctCount = 0, streak = 0, currentProblem = null, answered = false;
+        
+        const PROBLEMS = [
+            { passage: 'Regular exercise provides numerous health benefits. It strengthens the heart and improves circulation. Exercise also helps maintain a healthy weight and reduces the risk of chronic diseases like diabetes. Additionally, physical activity releases endorphins that improve mood and reduce stress.', answer: 'Exercise provides many health benefits', wrong: ['Exercise releases endorphins', 'Exercise helps you lose weight', 'Exercise is good for your heart'], hint: 'What do ALL the sentences discuss?', explanation: 'While the paragraph mentions endorphins, weight, and heart health, these are all details that support the main idea: exercise has many health benefits.' },
+            { passage: 'The printing press, invented by Johannes Gutenberg around 1440, revolutionized communication. Before this invention, books had to be copied by hand, making them expensive and rare. The printing press made books affordable and widely available. This led to increased literacy, the spread of new ideas, and eventually major movements like the Renaissance and Reformation.', answer: 'The printing press transformed how information spread', wrong: ['Gutenberg invented the printing press in 1440', 'Books were expensive before the printing press', 'The Renaissance happened because of books'], hint: 'What\'s the overall impact being discussed?', explanation: 'The main idea is about how the printing press revolutionized communication. The date, cost of books, and Renaissance are supporting details.' },
+            { passage: 'Bees play a crucial role in our ecosystem and food supply. They pollinate approximately 80% of flowering plants, including many crops humans depend on. Without bees, foods like apples, almonds, and blueberries would become scarce. The recent decline in bee populations has scientists and farmers deeply concerned about future food security.', answer: 'Bees are essential for our ecosystem and food supply', wrong: ['Bees pollinate 80% of flowering plants', 'Bee populations are declining', 'We need bees for apples and almonds'], hint: 'What\'s the central importance being emphasized?', explanation: 'The paragraph\'s central message is about bees\' crucial importance. The statistics and specific crops are details supporting this main idea.' },
+            { passage: 'Learning a second language offers cognitive benefits beyond just communication. Studies show bilingual people have better memory and problem-solving skills. They also tend to be more creative and better at multitasking. Furthermore, learning languages may delay the onset of dementia in older adults.', answer: 'Learning a second language improves brain function', wrong: ['Bilingual people have better memory', 'Languages help prevent dementia', 'Speaking two languages makes you creative'], hint: 'What benefit connects all these examples?', explanation: 'All the details—memory, creativity, multitasking, dementia prevention—are cognitive/brain benefits, which is the main idea.' },
+            { passage: 'Plastic pollution has become a global environmental crisis. Every year, about 8 million tons of plastic enter our oceans. Marine animals mistake plastic for food, leading to injury and death. Microplastics have been found in drinking water, seafood, and even human blood. Reducing plastic use has become an urgent priority.', answer: 'Plastic pollution is a serious environmental problem', wrong: ['8 million tons of plastic enter oceans yearly', 'Animals eat plastic by mistake', 'Microplastics are in our drinking water'], hint: 'What overall problem is being presented?', explanation: 'The statistics and examples all illustrate the main idea: plastic pollution is a serious crisis requiring action.' },
+            { passage: 'Getting enough sleep is essential for students\' academic success. Sleep helps the brain consolidate memories and process what was learned during the day. Students who sleep well perform better on tests and are more attentive in class. Lack of sleep, however, leads to poor concentration, irritability, and lower grades.', answer: 'Sleep is important for students\' academic performance', wrong: ['Sleep helps consolidate memories', 'Tired students get lower grades', 'Students should pay attention in class'], hint: 'What is the paragraph saying about sleep and students?', explanation: 'The main idea connects sleep to academic success. Memory consolidation, test performance, and grades are all details supporting this.' },
+            { passage: 'Ancient Egyptians made remarkable contributions to medicine. They developed surgical techniques and understood the importance of cleanliness in treating wounds. Egyptian doctors could set broken bones and perform basic surgeries. They also created the first known medical texts, documenting symptoms and treatments for various diseases.', answer: 'Ancient Egyptians made significant advances in medicine', wrong: ['Egyptians could set broken bones', 'Egyptian doctors valued cleanliness', 'Egyptians wrote medical texts'], hint: 'What are all these examples showing about Egypt?', explanation: 'Each detail—surgery, cleanliness, texts—demonstrates the main idea about Egyptian medical achievements.' },
+            { passage: 'Social media has changed how we form and maintain relationships. People can now connect with friends and family across the globe instantly. However, online interactions often lack the depth of face-to-face communication. Studies suggest heavy social media use may actually increase feelings of loneliness and isolation despite having more "connections."', answer: 'Social media has transformed relationships with mixed results', wrong: ['Social media connects people globally', 'Online communication lacks depth', 'Social media causes loneliness'], hint: 'Is the paragraph purely positive or negative about social media?', explanation: 'The main idea captures both the benefits and drawbacks mentioned, showing social media\'s complex impact on relationships.' }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentProblem = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+            document.getElementById('passageBox').textContent = currentProblem.passage;
+            
+            const options = [currentProblem.answer, ...currentProblem.wrong].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = options.indexOf(currentProblem.answer);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 150 + streak * 30;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 Why?</strong> ${currentProblem.explanation}`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Context Clues - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .passage-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 20px auto; max-width: 600px; font-size: 1.15rem; line-height: 1.9; text-align: left; border-left: 4px solid var(--primary); }
+        .passage-box .target-word { background: rgba(239, 68, 68, 0.3); padding: 2px 8px; border-radius: 4px; font-weight: 700; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 500px; margin: 0 auto; }
+        .option-btn { padding: 14px 18px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 550px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🔍 Context Clues</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="passage-box" id="passageBox"></div>
+                <div class="question-text" id="questionText">What does the highlighted word most likely mean?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Context Clue Types</h3>
+            <ul>
+                <li><strong>Definition:</strong> The meaning is stated directly</li>
+                <li><strong>Synonym:</strong> A similar word is nearby</li>
+                <li><strong>Antonym:</strong> An opposite word gives a hint</li>
+                <li><strong>Example:</strong> Examples show the meaning</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'context';
+        let score = 0, correctCount = 0, streak = 0, currentProblem = null, answered = false;
+        
+        const PROBLEMS = [
+            { passage: 'The <span class="target-word">benevolent</span> king was known for his kindness, often giving food and gold to the poor villagers.', word: 'benevolent', answer: 'kind and generous', wrong: ['cruel and harsh', 'wealthy and powerful', 'old and wise'], clue: 'Definition clue: "kindness" and "giving" tell us the meaning.' },
+            { passage: 'Unlike her gregarious sister who loved parties, Maria was quite <span class="target-word">introverted</span> and preferred spending time alone with her books.', word: 'introverted', answer: 'shy and preferring solitude', wrong: ['outgoing and social', 'angry and hostile', 'athletic and active'], clue: 'Antonym clue: "Unlike her gregarious sister" tells us introverted is the opposite.' },
+            { passage: 'The scientist\'s <span class="target-word">hypothesis</span>—her educated guess about the experiment\'s outcome—turned out to be correct.', word: 'hypothesis', answer: 'an educated guess or theory', wrong: ['a proven fact', 'a piece of equipment', 'a mistake'], clue: 'Definition clue: The dash explains it as "educated guess."' },
+            { passage: 'The <span class="target-word">arid</span> desert received less than two inches of rain per year, making it nearly impossible for plants to survive.', word: 'arid', answer: 'extremely dry', wrong: ['very wet', 'extremely cold', 'full of wildlife'], clue: 'Example clue: "less than two inches of rain" shows extreme dryness.' },
+            { passage: 'Her <span class="target-word">meticulous</span> attention to detail meant she checked every calculation three times and never made errors.', word: 'meticulous', answer: 'extremely careful and precise', wrong: ['careless and sloppy', 'quick and efficient', 'creative and artistic'], clue: 'Example clue: "checked every calculation three times" shows extreme care.' },
+            { passage: 'The comedian was known for his <span class="target-word">witty</span> remarks that made the audience laugh with their clever humor.', word: 'witty', answer: 'cleverly humorous', wrong: ['serious and sad', 'loud and obnoxious', 'confusing and strange'], clue: 'Synonym clue: "clever humor" and "made the audience laugh" indicate wit.' },
+            { passage: 'The medicine helped <span class="target-word">alleviate</span> her pain, reducing it from severe to mild within an hour.', word: 'alleviate', answer: 'to reduce or relieve', wrong: ['to increase or worsen', 'to cause or create', 'to measure or test'], clue: 'Example clue: "reducing it from severe to mild" shows relief.' },
+            { passage: 'The <span class="target-word">obsolete</span> technology, such as floppy disks and VHS tapes, has been replaced by modern alternatives.', word: 'obsolete', answer: 'outdated and no longer used', wrong: ['brand new and modern', 'expensive and rare', 'simple and easy'], clue: 'Example clue: "floppy disks and VHS tapes" and "replaced" show outdated items.' },
+            { passage: 'The teacher tried to <span class="target-word">motivate</span> her students by encouraging them and explaining how success would help their futures.', word: 'motivate', answer: 'to inspire or encourage', wrong: ['to punish or criticize', 'to confuse or mislead', 'to test or examine'], clue: 'Synonym clue: "encouraging" directly explains the meaning.' },
+            { passage: 'The abandoned house looked <span class="target-word">dilapidated</span>, with its broken windows, sagging roof, and crumbling walls.', word: 'dilapidated', answer: 'falling apart from neglect', wrong: ['newly renovated', 'beautifully decorated', 'carefully maintained'], clue: 'Example clue: "broken windows, sagging roof, crumbling walls" describe decay.' },
+            { passage: 'While most students found the test difficult, Sarah thought it was quite <span class="target-word">facile</span> and finished in half the time.', word: 'facile', answer: 'easy to do', wrong: ['extremely difficult', 'completely unfair', 'very boring'], clue: 'Antonym clue: "While most found it difficult" contrasts with how Sarah found it.' },
+            { passage: 'The <span class="target-word">nocturnal</span> animals like owls and bats come out at night when most other creatures are sleeping.', word: 'nocturnal', answer: 'active at night', wrong: ['active during day', 'living in water', 'eating only plants'], clue: 'Definition clue: "come out at night" directly explains the meaning.' }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentProblem = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+            document.getElementById('passageBox').innerHTML = currentProblem.passage;
+            document.getElementById('questionText').innerHTML = `What does "<strong>${currentProblem.word}</strong>" most likely mean?`;
+            
+            const options = [currentProblem.answer, ...currentProblem.wrong].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = options.indexOf(currentProblem.answer);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 25;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 ${currentProblem.clue}</strong>`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            const clueType = currentProblem.clue.split(':')[0];
+            document.getElementById('feedback').textContent = `💡 Look for a ${clueType.toLowerCase()} in the sentence.`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

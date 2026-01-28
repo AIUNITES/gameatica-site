@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Analogies Arena - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .analogy-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 500px; }
+        .analogy-text { font-size: 1.8rem; font-weight: 600; margin-bottom: 10px; }
+        .analogy-text .pair { color: var(--white); }
+        .analogy-text .separator { color: var(--gray); margin: 0 10px; }
+        .analogy-text .unknown { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .relationship { color: var(--primary); font-size: 0.95rem; font-style: italic; margin-top: 10px; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; margin: 0 auto; }
+        .option-btn { padding: 15px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1.1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 450px; margin-left: auto; margin-right: auto; display: none; }
+        .explanation.visible { display: block; }
+        .difficulty-tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .diff-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .diff-btn:hover { border-color: var(--primary); color: var(--white); }
+        .diff-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🔗 Analogies Arena</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="difficulty-tabs">
+            <button class="diff-btn active" data-diff="easy">Easy</button>
+            <button class="diff-btn" data-diff="medium">Medium</button>
+            <button class="diff-btn" data-diff="hard">Hard</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="analogy-box">
+                    <div class="analogy-text">
+                        <span class="pair">CAT : KITTEN</span>
+                        <span class="separator">::</span>
+                        <span class="pair">DOG : <span class="unknown">?</span></span>
+                    </div>
+                    <div class="relationship" id="relationship"></div>
+                </div>
+                <div class="question-text">Complete the analogy:</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Analogy Types</h3>
+            <ul>
+                <li><strong>Part : Whole</strong> - wheel : car</li>
+                <li><strong>Synonym</strong> - happy : joyful</li>
+                <li><strong>Antonym</strong> - hot : cold</li>
+                <li><strong>Category</strong> - dog : animal</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'analogies';
+        let score = 0, correctCount = 0, streak = 0, difficulty = 'easy', currentProblem = null, answered = false;
+        
+        const PROBLEMS = {
+            easy: [
+                { pair1: ['CAT', 'KITTEN'], pair2: ['DOG', '?'], answer: 'PUPPY', wrong: ['BARK', 'FUR', 'BONE'], type: 'Adult : Young', explanation: 'Cat is to kitten as dog is to puppy (adult animal to baby animal).' },
+                { pair1: ['HOT', 'COLD'], pair2: ['UP', '?'], answer: 'DOWN', wrong: ['HIGH', 'SKY', 'TOP'], type: 'Antonym', explanation: 'Hot is opposite of cold, up is opposite of down.' },
+                { pair1: ['BIRD', 'FLY'], pair2: ['FISH', '?'], answer: 'SWIM', wrong: ['WATER', 'SCALE', 'OCEAN'], type: 'Animal : Action', explanation: 'Birds fly, fish swim (how each moves).' },
+                { pair1: ['HAND', 'FINGER'], pair2: ['FOOT', '?'], answer: 'TOE', wrong: ['LEG', 'SHOE', 'WALK'], type: 'Whole : Part', explanation: 'Fingers are parts of hands, toes are parts of feet.' },
+                { pair1: ['DOCTOR', 'HOSPITAL'], pair2: ['TEACHER', '?'], answer: 'SCHOOL', wrong: ['BOOK', 'DESK', 'CHALK'], type: 'Worker : Workplace', explanation: 'Doctors work in hospitals, teachers work in schools.' },
+                { pair1: ['BIG', 'LARGE'], pair2: ['SMALL', '?'], answer: 'TINY', wrong: ['HUGE', 'MEDIUM', 'GIANT'], type: 'Synonym', explanation: 'Big and large are synonyms, small and tiny are synonyms.' },
+                { pair1: ['BREAD', 'BAKERY'], pair2: ['MEDICINE', '?'], answer: 'PHARMACY', wrong: ['DOCTOR', 'PILL', 'SICK'], type: 'Product : Store', explanation: 'Bread is sold at a bakery, medicine at a pharmacy.' },
+                { pair1: ['NIGHT', 'MOON'], pair2: ['DAY', '?'], answer: 'SUN', wrong: ['LIGHT', 'MORNING', 'BRIGHT'], type: 'Time : Object', explanation: 'Moon appears at night, sun appears during day.' }
+            ],
+            medium: [
+                { pair1: ['AUTHOR', 'BOOK'], pair2: ['COMPOSER', '?'], answer: 'SYMPHONY', wrong: ['PIANO', 'ORCHESTRA', 'STAGE'], type: 'Creator : Creation', explanation: 'Authors write books, composers write symphonies.' },
+                { pair1: ['CHAPTER', 'BOOK'], pair2: ['ACT', '?'], answer: 'PLAY', wrong: ['MOVIE', 'ACTOR', 'STAGE'], type: 'Part : Whole', explanation: 'Chapters are parts of books, acts are parts of plays.' },
+                { pair1: ['SCISSORS', 'CUT'], pair2: ['PENCIL', '?'], answer: 'WRITE', wrong: ['PAPER', 'ERASER', 'SHARP'], type: 'Tool : Function', explanation: 'Scissors are used to cut, pencils are used to write.' },
+                { pair1: ['TREE', 'FOREST'], pair2: ['STAR', '?'], answer: 'GALAXY', wrong: ['SPACE', 'MOON', 'BRIGHT'], type: 'Individual : Group', explanation: 'Many trees form a forest, many stars form a galaxy.' },
+                { pair1: ['WOLF', 'PACK'], pair2: ['FISH', '?'], answer: 'SCHOOL', wrong: ['OCEAN', 'SWIM', 'WATER'], type: 'Animal : Group Name', explanation: 'A group of wolves is a pack, a group of fish is a school.' },
+                { pair1: ['LIBRARY', 'QUIET'], pair2: ['STADIUM', '?'], answer: 'LOUD', wrong: ['SPORTS', 'SEATS', 'GAME'], type: 'Place : Characteristic', explanation: 'Libraries are quiet, stadiums are loud.' },
+                { pair1: ['WATER', 'THIRST'], pair2: ['FOOD', '?'], answer: 'HUNGER', wrong: ['EAT', 'STOMACH', 'MEAL'], type: 'Remedy : Problem', explanation: 'Water cures thirst, food cures hunger.' },
+                { pair1: ['NOVEL', 'FICTION'], pair2: ['BIOGRAPHY', '?'], answer: 'NONFICTION', wrong: ['BOOK', 'STORY', 'AUTHOR'], type: 'Example : Category', explanation: 'Novels are fiction, biographies are nonfiction.' }
+            ],
+            hard: [
+                { pair1: ['LACONIC', 'SPEECH'], pair2: ['AUSTERE', '?'], answer: 'LIFESTYLE', wrong: ['SPEECH', 'WEALTH', 'FASHION'], type: 'Adjective : What It Describes', explanation: 'Laconic describes brief speech, austere describes a simple lifestyle.' },
+                { pair1: ['MARATHON', 'STAMINA'], pair2: ['SPRINT', '?'], answer: 'SPEED', wrong: ['RACE', 'RUNNER', 'TRACK'], type: 'Activity : Required Quality', explanation: 'Marathons require stamina, sprints require speed.' },
+                { pair1: ['FLOCK', 'SHEEP'], pair2: ['PRIDE', '?'], answer: 'LIONS', wrong: ['TIGERS', 'JUNGLE', 'ROAR'], type: 'Collective Noun : Animal', explanation: 'A flock is a group of sheep, a pride is a group of lions.' },
+                { pair1: ['CANDID', 'DECEPTIVE'], pair2: ['HUMBLE', '?'], answer: 'ARROGANT', wrong: ['SHY', 'QUIET', 'MODEST'], type: 'Antonym', explanation: 'Candid is opposite of deceptive, humble is opposite of arrogant.' },
+                { pair1: ['BIBLIOPHILE', 'BOOKS'], pair2: ['AUDIOPHILE', '?'], answer: 'SOUND', wrong: ['MUSIC', 'EARS', 'SPEAKERS'], type: 'Enthusiast : Interest', explanation: 'A bibliophile loves books, an audiophile loves high-quality sound.' },
+                { pair1: ['COUPLET', 'POEM'], pair2: ['VERSE', '?'], answer: 'SONG', wrong: ['POEM', 'MUSIC', 'RHYME'], type: 'Part : Whole', explanation: 'Couplets are parts of poems, verses are parts of songs.' },
+                { pair1: ['SURGEON', 'SCALPEL'], pair2: ['SCULPTOR', '?'], answer: 'CHISEL', wrong: ['STATUE', 'MARBLE', 'ART'], type: 'Professional : Tool', explanation: 'Surgeons use scalpels, sculptors use chisels.' },
+                { pair1: ['MONARCHY', 'KING'], pair2: ['DEMOCRACY', '?'], answer: 'CITIZENS', wrong: ['PRESIDENT', 'VOTE', 'FREEDOM'], type: 'Government : Source of Power', explanation: 'In a monarchy, power comes from a king; in a democracy, from citizens.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            const problems = PROBLEMS[difficulty];
+            currentProblem = problems[Math.floor(Math.random() * problems.length)];
+            
+            document.querySelector('.analogy-text').innerHTML = `
+                <span class="pair">${currentProblem.pair1[0]} : ${currentProblem.pair1[1]}</span>
+                <span class="separator">::</span>
+                <span class="pair">${currentProblem.pair2[0]} : <span class="unknown">?</span></span>
+            `;
+            document.getElementById('relationship').textContent = `Type: ${currentProblem.type}`;
+            
+            const options = [currentProblem.answer, ...currentProblem.wrong].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = options.indexOf(currentProblem.answer);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const multiplier = difficulty === 'hard' ? 30 : (difficulty === 'medium' ? 25 : 20);
+                const points = 100 + streak * multiplier;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').textContent = '💡 ' + currentProblem.explanation;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = `💡 Relationship type: ${currentProblem.type}`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                difficulty = btn.dataset.diff;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

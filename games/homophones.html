@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Homophones Hero - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔊</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .sentence-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 20px auto; max-width: 550px; font-size: 1.4rem; line-height: 1.8; border-left: 4px solid var(--primary); }
+        .sentence-box .blank { display: inline-block; min-width: 100px; border-bottom: 3px solid var(--primary); margin: 0 5px; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; margin: 0 auto; }
+        .option-btn { padding: 18px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 500px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+        .explanation strong { color: var(--white); }
+        .explanation .def { margin: 8px 0; padding-left: 15px; border-left: 2px solid var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🔊 Homophones Hero</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="sentence-box" id="sentenceBox">
+                    I went <span class="blank"></span> the store.
+                </div>
+                <div class="question-text">Choose the correct word:</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Common Homophones</h3>
+            <ul>
+                <li><strong>there/their/they're</strong> - location, possession, contraction</li>
+                <li><strong>your/you're</strong> - possession vs "you are"</li>
+                <li><strong>its/it's</strong> - possession vs "it is"</li>
+                <li><strong>to/too/two</strong> - direction, also, number</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'homophones';
+        let score = 0, correctCount = 0, streak = 0, currentProblem = null, answered = false;
+        
+        const PROBLEMS = [
+            { sentence: '<span class="blank"></span> going to the park today.', options: ["They're", "Their", "There"], answer: 0, explanations: { "They're": "Contraction of 'they are'", "Their": "Shows possession (their car)", "There": "Indicates a place" } },
+            { sentence: 'The dog wagged <span class="blank"></span> tail.', options: ["its", "it's"], answer: 0, explanations: { "its": "Possessive form of 'it'", "it's": "Contraction of 'it is'" } },
+            { sentence: '<span class="blank"></span> my best friend.', options: ["Your", "You're"], answer: 1, explanations: { "Your": "Shows possession (your book)", "You're": "Contraction of 'you are'" } },
+            { sentence: 'I have <span class="blank"></span> apples.', options: ["to", "too", "two"], answer: 2, explanations: { "to": "Direction or infinitive (to go)", "too": "Also or excessive (too much)", "two": "The number 2" } },
+            { sentence: 'Put the book over <span class="blank"></span>.', options: ["there", "their", "they're"], answer: 0, explanations: { "there": "Indicates a place", "their": "Shows possession", "they're": "Contraction of 'they are'" } },
+            { sentence: 'I want to come <span class="blank"></span>!', options: ["to", "too", "two"], answer: 1, explanations: { "to": "Direction or infinitive", "too": "Also/as well", "two": "The number 2" } },
+            { sentence: 'The students forgot <span class="blank"></span> homework.', options: ["there", "their", "they're"], answer: 1, explanations: { "there": "Indicates a place", "their": "Shows possession", "they're": "Contraction of 'they are'" } },
+            { sentence: '<span class="blank"></span> a beautiful day outside.', options: ["Its", "It's"], answer: 1, explanations: { "Its": "Possessive form of 'it'", "It's": "Contraction of 'it is'" } },
+            { sentence: 'Is that <span class="blank"></span> car?', options: ["your", "you're"], answer: 0, explanations: { "your": "Shows possession", "you're": "Contraction of 'you are'" } },
+            { sentence: 'We walked <span class="blank"></span> the beach.', options: ["to", "too", "two"], answer: 0, explanations: { "to": "Direction/destination", "too": "Also or excessive", "two": "The number 2" } },
+            { sentence: 'The <span class="blank"></span> is shining brightly.', options: ["son", "sun"], answer: 1, explanations: { "son": "A male child", "sun": "The star in our solar system" } },
+            { sentence: 'I can <span class="blank"></span> the music.', options: ["hear", "here"], answer: 0, explanations: { "hear": "To perceive sound", "here": "In this place" } },
+            { sentence: 'Please come <span class="blank"></span>.', options: ["hear", "here"], answer: 1, explanations: { "hear": "To perceive sound", "here": "In this place" } },
+            { sentence: 'She <span class="blank"></span> her new dress.', options: ["wore", "war"], answer: 0, explanations: { "wore": "Past tense of wear", "war": "Armed conflict" } },
+            { sentence: 'I need to <span class="blank"></span> a letter.', options: ["write", "right"], answer: 0, explanations: { "write": "To form letters/words", "right": "Correct, or direction" } },
+            { sentence: 'Turn <span class="blank"></span> at the corner.', options: ["write", "right"], answer: 1, explanations: { "write": "To form letters/words", "right": "Direction opposite of left" } },
+            { sentence: 'The <span class="blank"></span> blew strongly.', options: ["wind", "whined"], answer: 0, explanations: { "wind": "Moving air", "whined": "Complained in a high voice" } },
+            { sentence: 'I <span class="blank"></span> the whole cake!', options: ["ate", "eight"], answer: 0, explanations: { "ate": "Past tense of eat", "eight": "The number 8" } },
+            { sentence: 'She has <span class="blank"></span> brothers.', options: ["ate", "eight"], answer: 1, explanations: { "ate": "Past tense of eat", "eight": "The number 8" } },
+            { sentence: 'The knight rode his <span class="blank"></span>.', options: ["horse", "hoarse"], answer: 0, explanations: { "horse": "An animal", "hoarse": "Having a rough voice" } },
+            { sentence: 'After yelling, his voice was <span class="blank"></span>.', options: ["horse", "hoarse"], answer: 1, explanations: { "horse": "An animal", "hoarse": "Having a rough, harsh voice" } },
+            { sentence: 'I need a <span class="blank"></span> of paper.', options: ["piece", "peace"], answer: 0, explanations: { "piece": "A part of something", "peace": "Freedom from war/calm" } },
+            { sentence: 'We hope for world <span class="blank"></span>.', options: ["piece", "peace"], answer: 1, explanations: { "piece": "A part of something", "peace": "Freedom from conflict" } },
+            { sentence: 'The <span class="blank"></span> is very high today.', options: ["stake", "steak"], answer: 0, explanations: { "stake": "A share/risk or wooden post", "steak": "A cut of meat" } },
+            { sentence: 'I ordered a <span class="blank"></span> for dinner.', options: ["stake", "steak"], answer: 1, explanations: { "stake": "A share or wooden post", "steak": "A cut of beef" } }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentProblem = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+            document.getElementById('sentenceBox').innerHTML = currentProblem.sentence;
+            
+            const shuffled = [...currentProblem.options].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = shuffled.indexOf(currentProblem.options[currentProblem.answer]);
+            currentProblem.shuffledOptions = shuffled;
+            
+            document.getElementById('optionsGrid').innerHTML = shuffled.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 25;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            let expHtml = '<strong>Definitions:</strong>';
+            for (const [word, def] of Object.entries(currentProblem.explanations)) {
+                expHtml += `<div class="def"><strong>${word}</strong>: ${def}</div>`;
+            }
+            document.getElementById('explanation').innerHTML = expHtml;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            const correctWord = currentProblem.options[currentProblem.answer];
+            document.getElementById('feedback').textContent = `💡 ${currentProblem.explanations[correctWord]}`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>
