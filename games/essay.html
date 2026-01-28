@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Essay Structure - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .paragraph-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 20px auto; max-width: 600px; font-size: 1.05rem; line-height: 1.8; text-align: left; border-left: 4px solid var(--primary); }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; font-weight: 600; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 450px; margin: 0 auto; }
+        .option-btn { padding: 15px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 550px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+        .mode-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .mode-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .mode-btn:hover { border-color: var(--primary); }
+        .mode-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>📝 Essay Structure</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="identify">Identify Parts</button>
+            <button class="mode-btn" data-mode="order">Paragraph Order</button>
+            <button class="mode-btn" data-mode="elements">Essay Elements</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="paragraph-box" id="paragraphBox"></div>
+                <div class="question-text" id="questionText">What part of an essay is this?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Essay Structure</h3>
+            <ul>
+                <li><strong>Introduction:</strong> Hook, background, thesis statement</li>
+                <li><strong>Body Paragraphs:</strong> Topic sentence, evidence, analysis</li>
+                <li><strong>Conclusion:</strong> Restate thesis, summarize, final thought</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'essay';
+        let score = 0, correctCount = 0, streak = 0, mode = 'identify', currentProblem = null, answered = false;
+        
+        const PROBLEMS = {
+            identify: [
+                { text: 'Have you ever wondered why some students succeed while others struggle? Education is the key to unlocking human potential. In this essay, I will argue that investing in early childhood education produces the greatest returns for society.', answer: 'Introduction', wrong: ['Body Paragraph', 'Conclusion', 'Transition'], hint: 'Does it introduce a topic and state a position?', explanation: 'This is an introduction: it has a hook (question), background, and a thesis statement.' },
+                { text: 'First, research shows that children who attend quality preschool programs score higher on standardized tests. According to the Perry Preschool Study, participants were 44% more likely to graduate high school. This evidence demonstrates the long-term academic benefits of early education.', answer: 'Body Paragraph', wrong: ['Introduction', 'Conclusion', 'Thesis Statement'], hint: 'Does it present evidence and analysis?', explanation: 'This is a body paragraph: it has a topic sentence, evidence (the study), and analysis of that evidence.' },
+                { text: 'In conclusion, early childhood education is a wise investment that benefits individuals and society. The evidence clearly shows improved academic outcomes, higher earning potential, and reduced crime rates. As policymakers consider budget priorities, they should remember: investing in our youngest learners today creates a stronger tomorrow.', answer: 'Conclusion', wrong: ['Introduction', 'Body Paragraph', 'Thesis Statement'], hint: 'Does it wrap up and leave a final impression?', explanation: 'This is a conclusion: it restates the thesis, summarizes key points, and ends with a call to action.' },
+                { text: 'Furthermore, early education programs reduce crime rates and save taxpayer money. Studies show that for every dollar invested in preschool, society saves seven dollars in reduced criminal justice costs. These savings make early education not just morally right, but economically smart.', answer: 'Body Paragraph', wrong: ['Introduction', 'Conclusion', 'Hook'], hint: 'Does it present a new supporting point?', explanation: 'This is a body paragraph: "Furthermore" signals a new point, followed by evidence and analysis.' },
+                { text: 'The alarm blared at 5 AM as Maria prepared for another twelve-hour shift. For millions of workers like her, the minimum wage debate isn\'t abstract—it\'s survival. This essay examines why raising the minimum wage would help working families without destroying small businesses.', answer: 'Introduction', wrong: ['Body Paragraph', 'Conclusion', 'Transition'], hint: 'Does it set up the essay\'s argument?', explanation: 'This introduction uses a narrative hook, provides context, and states the thesis.' }
+            ],
+            order: [
+                { text: 'Which comes FIRST in a standard essay?', answer: 'Hook to grab reader attention', wrong: ['Evidence and examples', 'Restating the thesis', 'Counterargument'], hint: 'What makes readers want to continue?', explanation: 'The hook comes first—it\'s designed to capture reader interest before anything else.' },
+                { text: 'What should come immediately AFTER the hook?', answer: 'Background information', wrong: ['The conclusion', 'Body paragraph evidence', 'Works cited'], hint: 'Readers need context before the main argument.', explanation: 'Background/context comes after the hook to prepare readers for the thesis.' },
+                { text: 'Where does the thesis statement typically appear?', answer: 'End of the introduction', wrong: ['Beginning of conclusion', 'Middle of body paragraphs', 'After the hook'], hint: 'It\'s the last thing before body paragraphs begin.', explanation: 'The thesis typically ends the introduction, setting up what the body will prove.' },
+                { text: 'What should each body paragraph begin with?', answer: 'A topic sentence', wrong: ['A quote', 'The thesis restated', 'A transition word only'], hint: 'It states the paragraph\'s main point.', explanation: 'Each body paragraph starts with a topic sentence that previews its main idea.' },
+                { text: 'What comes LAST in a conclusion?', answer: 'A memorable final thought', wrong: ['New evidence', 'The thesis statement', 'A topic sentence'], hint: 'Leave the reader with something to remember.', explanation: 'Conclusions end with a final thought, call to action, or broader implication.' }
+            ],
+            elements: [
+                { text: '"School uniforms should be required in all public schools because they reduce bullying, save money, and improve focus."', answer: 'Thesis Statement', wrong: ['Topic Sentence', 'Hook', 'Conclusion'], hint: 'Does it state the main argument and preview points?', explanation: 'This is a thesis: it states the position and previews the three supporting reasons.' },
+                { text: '"According to a 2023 study by Harvard researchers, students in uniform schools reported 23% less bullying."', answer: 'Evidence', wrong: ['Analysis', 'Topic Sentence', 'Thesis'], hint: 'Is this a fact or statistic supporting a claim?', explanation: 'This is evidence: a specific study with statistics that supports an argument.' },
+                { text: '"This data suggests that uniforms create a more equal environment where students are judged on character rather than clothing."', answer: 'Analysis', wrong: ['Evidence', 'Topic Sentence', 'Hook'], hint: 'Does it explain what the evidence means?', explanation: 'This is analysis: it interprets the evidence and explains its significance.' },
+                { text: '"Imagine walking into a classroom where every student looks ready to learn."', answer: 'Hook', wrong: ['Thesis', 'Topic Sentence', 'Conclusion'], hint: 'Does it grab attention at the very start?', explanation: 'This is a hook: it engages readers by asking them to visualize a scene.' },
+                { text: '"While uniforms offer benefits, some argue they limit self-expression. However, students can express themselves through accessories, hairstyles, and most importantly, their ideas and actions."', answer: 'Counterargument & Rebuttal', wrong: ['Thesis Statement', 'Conclusion', 'Evidence'], hint: 'Does it address the opposing view?', explanation: 'This acknowledges a counterargument and then rebuts it with reasoning.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            const problems = PROBLEMS[mode];
+            currentProblem = problems[Math.floor(Math.random() * problems.length)];
+            
+            document.getElementById('paragraphBox').textContent = currentProblem.text;
+            document.getElementById('questionText').textContent = mode === 'order' ? currentProblem.text : 'What part of an essay is this?';
+            document.getElementById('paragraphBox').style.display = mode === 'order' ? 'none' : 'block';
+            
+            const options = [currentProblem.answer, ...currentProblem.wrong].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = options.indexOf(currentProblem.answer);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 25;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 ${currentProblem.explanation}</strong>`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

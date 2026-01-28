@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Etymology Explorer - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .word-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 450px; }
+        .word-box .word { font-size: 2.5rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        .word-box .definition { color: var(--gray-light); font-size: 1rem; font-style: italic; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 10px; max-width: 500px; margin: 0 auto; }
+        .option-btn { padding: 14px 18px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .origin-story { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 500px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .origin-story.visible { display: block; }
+        .origin-story strong { color: var(--white); }
+        .origin-story .timeline { margin-top: 10px; padding-left: 15px; border-left: 2px solid var(--primary); }
+        .mode-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .mode-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .mode-btn:hover { border-color: var(--primary); }
+        .mode-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🏛️ Etymology Explorer</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="origin">Word Origins</button>
+            <button class="mode-btn" data-mode="language">Source Language</button>
+            <button class="mode-btn" data-mode="meaning">Original Meaning</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="word-box">
+                    <div class="word" id="wordDisplay">ALPHABET</div>
+                    <div class="definition" id="definitionDisplay">A set of letters used for writing</div>
+                </div>
+                <div class="question-text" id="questionText">Where does this word come from?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="origin-story" id="originStory"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>What is Etymology?</h3>
+            <ul>
+                <li>Etymology is the study of word origins and history</li>
+                <li>English borrows from Latin, Greek, French, German, and more</li>
+                <li>Understanding origins helps remember meanings!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'etymology';
+        let score = 0, correctCount = 0, streak = 0, mode = 'origin', currentWord = null, answered = false;
+        
+        const WORDS = [
+            { word: 'ALPHABET', definition: 'A set of letters used for writing', language: 'Greek', originalMeaning: 'Alpha + Beta (first two Greek letters)', origin: 'From Greek "alphabētos," combining "alpha" (α) and "beta" (β), the first two letters of the Greek alphabet.', hint: 'Think of the first two Greek letters' },
+            { word: 'TELEPHONE', definition: 'Device for speaking over distance', language: 'Greek', originalMeaning: 'Far + Sound', origin: 'From Greek "tēle" (far) + "phōnē" (sound/voice). Literally "far sound" or "distant voice."', hint: 'Tele means far, phone means sound' },
+            { word: 'DEMOCRACY', definition: 'Government by the people', language: 'Greek', originalMeaning: 'People + Power/Rule', origin: 'From Greek "dēmos" (people) + "kratos" (power/rule). The ancient Greeks invented both the word and the concept.', hint: 'Demo = people, cracy = rule' },
+            { word: 'SALARY', definition: 'Payment for work', language: 'Latin', originalMeaning: 'Salt money', origin: 'From Latin "salarium," money given to Roman soldiers to buy salt. Salt was extremely valuable in ancient times—hence "worth your salt."', hint: 'Related to a valuable seasoning' },
+            { word: 'DISASTER', definition: 'A sudden catastrophic event', language: 'Italian/Latin', originalMeaning: 'Bad star', origin: 'From Italian "disastro," from Latin "dis-" (bad) + "astrum" (star). Ancient people believed catastrophes were caused by unfavorable star alignments.', hint: 'Ancient people blamed the stars' },
+            { word: 'SANDWICH', definition: 'Food between slices of bread', language: 'English (name)', originalMeaning: 'Named after a person', origin: 'Named after John Montagu, 4th Earl of Sandwich (1718-1792), who reportedly ate meat between bread slices so he could keep playing cards.', hint: 'Named after a British nobleman' },
+            { word: 'ROBOT', definition: 'A mechanical automated device', language: 'Czech', originalMeaning: 'Forced labor', origin: 'From Czech "robota" (forced labor). First used by Karel Čapek in his 1920 play "R.U.R." about artificial workers.', hint: 'From a 1920 science fiction play' },
+            { word: 'QUARANTINE', definition: 'Isolation to prevent disease spread', language: 'Italian', originalMeaning: 'Forty days', origin: 'From Italian "quarantina" (40 days). Ships arriving in Venice during plague outbreaks had to anchor for 40 days before landing.', hint: 'Related to a number of days' },
+            { word: 'MUSCLE', definition: 'Body tissue that produces movement', language: 'Latin', originalMeaning: 'Little mouse', origin: 'From Latin "musculus" (little mouse). Romans thought flexing muscles looked like mice moving under the skin!', hint: 'Romans saw a small animal' },
+            { word: 'SINCERE', definition: 'Genuine and honest', language: 'Latin', originalMeaning: 'Without wax', origin: 'Possibly from Latin "sine" (without) + "cera" (wax). Dishonest sculptors hid flaws with wax; honest work was "without wax."', hint: 'About hiding flaws in sculptures' },
+            { word: 'CANDIDATE', definition: 'Person seeking election', language: 'Latin', originalMeaning: 'Wearing white', origin: 'From Latin "candidatus" (clothed in white). Roman politicians wore bright white togas to symbolize purity when campaigning.', hint: 'Related to clothing color' },
+            { word: 'ASSASSIN', definition: 'A murderer, especially of important people', language: 'Arabic', originalMeaning: 'Hashish users', origin: 'From Arabic "ḥashshāshīn" (hashish users). A medieval group allegedly used hashish before carrying out political murders.', hint: 'Named after a substance they allegedly used' },
+            { word: 'MORTGAGE', definition: 'Loan for buying property', language: 'French', originalMeaning: 'Death pledge', origin: 'From Old French "mort" (death) + "gage" (pledge). The deal "dies" when paid off or when payment fails.', hint: 'A rather grim name for a loan' },
+            { word: 'CURFEW', definition: 'A time by which people must be indoors', language: 'French', originalMeaning: 'Cover fire', origin: 'From Old French "couvre-feu" (cover fire). Medieval towns rang bells signaling people to cover their fires and go to bed.', hint: 'Related to fire safety in medieval times' },
+            { word: 'GYMNASIUM', definition: 'A place for exercise', language: 'Greek', originalMeaning: 'Exercise naked', origin: 'From Greek "gymnazein" (to exercise naked). Ancient Greek athletes trained and competed without clothes!', hint: 'Greek athletes wore nothing!' },
+            { word: 'SARCASM', definition: 'Mocking or ironic remarks', language: 'Greek', originalMeaning: 'To tear flesh', origin: 'From Greek "sarkazein" (to tear flesh). Sarcastic words were seen as verbally "tearing" at someone.', hint: 'A violent image for harsh words' }
+        ];
+        
+        const LANGUAGES = ['Greek', 'Latin', 'French', 'Italian', 'Arabic', 'Czech', 'German', 'English (name)'];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('originStory').classList.remove('visible');
+            
+            currentWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            document.getElementById('wordDisplay').textContent = currentWord.word;
+            document.getElementById('definitionDisplay').textContent = currentWord.definition;
+            
+            let options, question;
+            
+            if (mode === 'origin') {
+                question = 'What is the origin story of this word?';
+                const correctOption = currentWord.originalMeaning;
+                const wrongOptions = WORDS.filter(w => w !== currentWord)
+                    .map(w => w.originalMeaning)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3);
+                options = [correctOption, ...wrongOptions].sort(() => Math.random() - 0.5);
+                currentWord.correctIndex = options.indexOf(correctOption);
+            } else if (mode === 'language') {
+                question = 'What language does this word come from?';
+                const correctOption = currentWord.language;
+                const wrongOptions = LANGUAGES.filter(l => l !== correctOption)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3);
+                options = [correctOption, ...wrongOptions].sort(() => Math.random() - 0.5);
+                currentWord.correctIndex = options.indexOf(correctOption);
+            } else {
+                question = 'What did this word originally mean?';
+                const correctOption = currentWord.originalMeaning;
+                const wrongOptions = WORDS.filter(w => w !== currentWord)
+                    .map(w => w.originalMeaning)
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 3);
+                options = [correctOption, ...wrongOptions].sort(() => Math.random() - 0.5);
+                currentWord.correctIndex = options.indexOf(correctOption);
+            }
+            
+            document.getElementById('questionText').textContent = question;
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentWord.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 25;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentWord.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('originStory').innerHTML = `
+                <strong>📚 ${currentWord.word}</strong><br>
+                <strong>Language:</strong> ${currentWord.language}<br>
+                <strong>Original meaning:</strong> ${currentWord.originalMeaning}<br>
+                <div class="timeline">${currentWord.origin}</div>
+            `;
+            document.getElementById('originStory').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = '💡 ' + currentWord.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Rhyme Time - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .word-box { background: var(--dark); border-radius: 12px; padding: 35px; margin: 20px auto; max-width: 350px; }
+        .word-box .word { font-size: 3rem; font-weight: 800; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .timer-display { font-size: 2rem; font-weight: 700; color: var(--primary); margin: 15px 0; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 15px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 400px; margin: 0 auto; }
+        .option-btn { padding: 18px 15px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1.2rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); transform: scale(1.02); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .rhyme-info { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; max-width: 400px; margin-left: auto; margin-right: auto; display: none; }
+        .rhyme-info.visible { display: block; }
+        .rhyme-info .rhyme-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 10px; }
+        .rhyme-info .rhyme-tag { background: rgba(239,68,68,0.2); padding: 5px 12px; border-radius: 15px; font-size: 0.9rem; }
+        .mode-tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+        .mode-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .mode-btn:hover { border-color: var(--primary); }
+        .mode-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🎵 Rhyme Time</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="mode-tabs">
+            <button class="mode-btn active" data-mode="find">Find the Rhyme</button>
+            <button class="mode-btn" data-mode="odd">Odd One Out</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="word-box">
+                    <div class="word" id="wordDisplay">CAT</div>
+                </div>
+                <div class="question-text" id="questionText">Which word rhymes with this?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="rhyme-info" id="rhymeInfo"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>What Makes Words Rhyme?</h3>
+            <ul>
+                <li>Rhyming words have the same ending sound</li>
+                <li>CAT rhymes with HAT, BAT, SAT (all end in -at)</li>
+                <li>Spelling doesn't matter—BLUE and SHOE rhyme!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'rhymes';
+        let score = 0, correctCount = 0, streak = 0, mode = 'find', currentProblem = null, answered = false;
+        
+        const RHYME_SETS = [
+            { word: 'CAT', rhymes: ['hat', 'bat', 'sat', 'mat', 'rat', 'flat'], nonRhymes: ['dog', 'car', 'cup', 'bed'] },
+            { word: 'MOON', rhymes: ['soon', 'tune', 'June', 'spoon', 'noon'], nonRhymes: ['sun', 'star', 'day', 'moon'] },
+            { word: 'TREE', rhymes: ['free', 'bee', 'see', 'key', 'me', 'we'], nonRhymes: ['leaf', 'branch', 'wood', 'green'] },
+            { word: 'LIGHT', rhymes: ['night', 'right', 'bright', 'fight', 'sight', 'kite'], nonRhymes: ['dark', 'lamp', 'sun', 'glow'] },
+            { word: 'BLUE', rhymes: ['true', 'shoe', 'new', 'flew', 'grew', 'two'], nonRhymes: ['red', 'color', 'sky', 'sea'] },
+            { word: 'RAIN', rhymes: ['train', 'brain', 'main', 'plain', 'chain', 'Spain'], nonRhymes: ['wet', 'cloud', 'storm', 'drop'] },
+            { word: 'BOOK', rhymes: ['look', 'cook', 'took', 'hook', 'shook'], nonRhymes: ['read', 'page', 'story', 'word'] },
+            { word: 'HOUSE', rhymes: ['mouse', 'blouse', 'spouse'], nonRhymes: ['home', 'door', 'roof', 'room'] },
+            { word: 'SING', rhymes: ['ring', 'king', 'bring', 'thing', 'wing', 'spring'], nonRhymes: ['song', 'music', 'voice', 'tune'] },
+            { word: 'DREAM', rhymes: ['team', 'stream', 'cream', 'beam', 'seem'], nonRhymes: ['sleep', 'night', 'wish', 'hope'] },
+            { word: 'PLAY', rhymes: ['day', 'say', 'way', 'stay', 'gray', 'may'], nonRhymes: ['game', 'fun', 'toy', 'run'] },
+            { word: 'SMILE', rhymes: ['mile', 'while', 'style', 'pile', 'trial'], nonRhymes: ['happy', 'face', 'laugh', 'grin'] },
+            { word: 'COLD', rhymes: ['old', 'gold', 'hold', 'told', 'bold', 'fold'], nonRhymes: ['ice', 'snow', 'freeze', 'winter'] },
+            { word: 'ROUND', rhymes: ['sound', 'ground', 'found', 'bound', 'pound'], nonRhymes: ['circle', 'ball', 'shape', 'wheel'] },
+            { word: 'LAKE', rhymes: ['make', 'take', 'cake', 'wake', 'shake', 'bake'], nonRhymes: ['water', 'pond', 'swim', 'fish'] },
+            { word: 'TIME', rhymes: ['rhyme', 'climb', 'dime', 'mime', 'lime'], nonRhymes: ['clock', 'hour', 'minute', 'day'] }
+        ];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('rhymeInfo').classList.remove('visible');
+            
+            const set = RHYME_SETS[Math.floor(Math.random() * RHYME_SETS.length)];
+            currentProblem = { ...set };
+            
+            if (mode === 'find') {
+                document.getElementById('wordDisplay').textContent = set.word;
+                document.getElementById('questionText').textContent = 'Which word rhymes with this?';
+                
+                const correctRhyme = set.rhymes[Math.floor(Math.random() * set.rhymes.length)];
+                const wrongOptions = set.nonRhymes.sort(() => Math.random() - 0.5).slice(0, 3);
+                const options = [correctRhyme, ...wrongOptions].sort(() => Math.random() - 0.5);
+                currentProblem.correctIndex = options.indexOf(correctRhyme);
+                currentProblem.correct = correctRhyme;
+                
+                renderOptions(options);
+            } else {
+                // Odd one out mode
+                document.getElementById('wordDisplay').textContent = '🔍';
+                document.getElementById('questionText').textContent = 'Which word does NOT rhyme with the others?';
+                
+                const rhymingWords = set.rhymes.sort(() => Math.random() - 0.5).slice(0, 3);
+                const oddOne = set.nonRhymes[Math.floor(Math.random() * set.nonRhymes.length)];
+                const options = [...rhymingWords, oddOne].sort(() => Math.random() - 0.5);
+                currentProblem.correctIndex = options.indexOf(oddOne);
+                currentProblem.correct = oddOne;
+                currentProblem.rhymingGroup = rhymingWords;
+                
+                renderOptions(options);
+            }
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function renderOptions(options) {
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt.toUpperCase()}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            let infoHtml = mode === 'find' 
+                ? `<strong>More rhymes for ${currentProblem.word}:</strong><div class="rhyme-list">${currentProblem.rhymes.map(r => `<span class="rhyme-tag">${r}</span>`).join('')}</div>`
+                : `<strong>The rhyming words were:</strong><div class="rhyme-list">${currentProblem.rhymingGroup.map(r => `<span class="rhyme-tag">${r}</span>`).join('')}</div>`;
+            
+            document.getElementById('rhymeInfo').innerHTML = infoHtml;
+            document.getElementById('rhymeInfo').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                mode = btn.dataset.mode;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

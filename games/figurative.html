@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Figurative Language - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .sentence-box { background: var(--dark); border-radius: 12px; padding: 25px; margin: 20px auto; max-width: 550px; font-size: 1.3rem; line-height: 1.7; border-left: 4px solid var(--primary); font-style: italic; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 500px; margin: 0 auto; }
+        .option-btn { padding: 15px 12px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 0.95rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .explanation { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 500px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .explanation.visible { display: block; }
+        .explanation strong { color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🎭 Figurative Language</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="sentence-box" id="sentenceBox">"Her smile was as bright as the sun."</div>
+                <div class="question-text">What type of figurative language is this?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="explanation" id="explanation"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>Types of Figurative Language</h3>
+            <ul>
+                <li><strong>Simile:</strong> Comparison using "like" or "as"</li>
+                <li><strong>Metaphor:</strong> Direct comparison (X is Y)</li>
+                <li><strong>Personification:</strong> Giving human traits to non-human things</li>
+                <li><strong>Hyperbole:</strong> Extreme exaggeration</li>
+                <li><strong>Onomatopoeia:</strong> Words that sound like what they describe</li>
+                <li><strong>Alliteration:</strong> Repeated starting sounds</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'figurative';
+        let score = 0, correctCount = 0, streak = 0, currentProblem = null, answered = false;
+        
+        const PROBLEMS = [
+            // Similes
+            { sentence: '"Her smile was as bright as the sun."', type: 'Simile', hint: 'Look for "as" or "like"', explanation: 'This is a simile—it compares her smile to the sun using "as."' },
+            { sentence: '"He ran like the wind."', type: 'Simile', hint: 'Look for "as" or "like"', explanation: 'This is a simile—it compares how he ran to the wind using "like."' },
+            { sentence: '"The water was as cold as ice."', type: 'Simile', hint: 'Look for "as" or "like"', explanation: 'This is a simile—it compares the water temperature to ice using "as."' },
+            { sentence: '"She sings like an angel."', type: 'Simile', hint: 'Look for "as" or "like"', explanation: 'This is a simile—it compares her singing to an angel using "like."' },
+            
+            // Metaphors
+            { sentence: '"Time is money."', type: 'Metaphor', hint: 'Is something being called something else?', explanation: 'This is a metaphor—it directly states that time IS money, without using like/as.' },
+            { sentence: '"Life is a roller coaster."', type: 'Metaphor', hint: 'Is something being called something else?', explanation: 'This is a metaphor—life is directly compared to a roller coaster.' },
+            { sentence: '"The classroom was a zoo."', type: 'Metaphor', hint: 'Is something being called something else?', explanation: 'This is a metaphor—the classroom is called a zoo (chaotic, noisy).' },
+            { sentence: '"He has a heart of stone."', type: 'Metaphor', hint: 'Is something being called something else?', explanation: 'This is a metaphor—his heart is called stone (meaning he\'s unfeeling).' },
+            
+            // Personification
+            { sentence: '"The wind whispered through the trees."', type: 'Personification', hint: 'Can non-human things really do this?', explanation: 'This is personification—wind can\'t actually whisper; that\'s a human action.' },
+            { sentence: '"The sun smiled down on us."', type: 'Personification', hint: 'Can non-human things really do this?', explanation: 'This is personification—the sun is given the human ability to smile.' },
+            { sentence: '"The flowers danced in the breeze."', type: 'Personification', hint: 'Can non-human things really do this?', explanation: 'This is personification—flowers can\'t dance; that\'s a human activity.' },
+            { sentence: '"My alarm clock yells at me every morning."', type: 'Personification', hint: 'Can non-human things really do this?', explanation: 'This is personification—an alarm clock is given the human ability to yell.' },
+            { sentence: '"The old car groaned as it climbed the hill."', type: 'Personification', hint: 'Can non-human things really do this?', explanation: 'This is personification—the car is given the human ability to groan.' },
+            
+            // Hyperbole
+            { sentence: '"I\'ve told you a million times!"', type: 'Hyperbole', hint: 'Is this literally possible?', explanation: 'This is hyperbole—an extreme exaggeration for emphasis. No one literally says something a million times.' },
+            { sentence: '"I\'m so hungry I could eat a horse."', type: 'Hyperbole', hint: 'Is this literally possible?', explanation: 'This is hyperbole—obviously no one can actually eat an entire horse.' },
+            { sentence: '"This bag weighs a ton!"', type: 'Hyperbole', hint: 'Is this literally possible?', explanation: 'This is hyperbole—the bag doesn\'t literally weigh 2,000 pounds.' },
+            { sentence: '"I died of embarrassment."', type: 'Hyperbole', hint: 'Is this literally possible?', explanation: 'This is hyperbole—the person didn\'t actually die; they\'re exaggerating their embarrassment.' },
+            
+            // Onomatopoeia
+            { sentence: '"The bees buzzed around the garden."', type: 'Onomatopoeia', hint: 'Does a word sound like what it describes?', explanation: 'This is onomatopoeia—"buzzed" sounds like the actual sound bees make.' },
+            { sentence: '"The thunder crashed loudly."', type: 'Onomatopoeia', hint: 'Does a word sound like what it describes?', explanation: 'This is onomatopoeia—"crashed" imitates the sound of thunder.' },
+            { sentence: '"The bacon sizzled in the pan."', type: 'Onomatopoeia', hint: 'Does a word sound like what it describes?', explanation: 'This is onomatopoeia—"sizzled" sounds like cooking bacon.' },
+            { sentence: '"The door creaked open slowly."', type: 'Onomatopoeia', hint: 'Does a word sound like what it describes?', explanation: 'This is onomatopoeia—"creaked" imitates the sound an old door makes.' },
+            
+            // Alliteration
+            { sentence: '"Peter Piper picked a peck of pickled peppers."', type: 'Alliteration', hint: 'Do words start with the same sound?', explanation: 'This is alliteration—many words start with the "P" sound.' },
+            { sentence: '"She sells seashells by the seashore."', type: 'Alliteration', hint: 'Do words start with the same sound?', explanation: 'This is alliteration—multiple words start with the "S" sound.' },
+            { sentence: '"The big, bad bear scared the baby."', type: 'Alliteration', hint: 'Do words start with the same sound?', explanation: 'This is alliteration—"big," "bad," "bear," and "baby" all start with "B."' }
+        ];
+        
+        const OPTIONS = ['Simile', 'Metaphor', 'Personification', 'Hyperbole', 'Onomatopoeia', 'Alliteration'];
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('explanation').classList.remove('visible');
+            
+            currentProblem = PROBLEMS[Math.floor(Math.random() * PROBLEMS.length)];
+            document.getElementById('sentenceBox').textContent = currentProblem.sentence;
+            
+            // Get 3 wrong options
+            let wrongOptions = OPTIONS.filter(o => o !== currentProblem.type);
+            wrongOptions = wrongOptions.sort(() => Math.random() - 0.5).slice(0, 3);
+            
+            const options = [currentProblem.type, ...wrongOptions].sort(() => Math.random() - 0.5);
+            currentProblem.correctIndex = options.indexOf(currentProblem.type);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentProblem.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentProblem.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('explanation').innerHTML = `<strong>💡 ${currentProblem.explanation}</strong>`;
+            document.getElementById('explanation').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = '💡 ' + currentProblem.hint;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>
