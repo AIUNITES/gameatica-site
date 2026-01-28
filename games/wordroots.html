@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Word Roots - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .root-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 400px; border-left: 4px solid var(--primary); }
+        .root-box .root { font-size: 2.5rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
+        .root-box .origin { color: var(--gray); font-size: 0.9rem; font-style: italic; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 450px; margin: 0 auto; }
+        .option-btn { padding: 15px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .examples { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 450px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .examples.visible { display: block; }
+        .examples strong { color: var(--white); }
+        .examples .word-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .examples .word-tag { background: rgba(239,68,68,0.2); padding: 4px 10px; border-radius: 15px; font-size: 0.85rem; }
+        .category-tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .cat-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; font-size: 0.85rem; }
+        .cat-btn:hover { border-color: var(--primary); color: var(--white); }
+        .cat-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🌱 Word Roots</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="category-tabs">
+            <button class="cat-btn active" data-cat="greek">Greek</button>
+            <button class="cat-btn" data-cat="latin">Latin</button>
+            <button class="cat-btn" data-cat="mixed">Mixed</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="root-box">
+                    <div class="root" id="rootDisplay">BIO</div>
+                    <div class="origin" id="originDisplay">Greek Origin</div>
+                </div>
+                <div class="question-text">What does this root mean?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="examples" id="examples"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Learn Latin and Greek roots</li>
+                <li>Understanding roots helps decode unfamiliar words</li>
+                <li>See example words using each root</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'wordroots';
+        let score = 0, correctCount = 0, streak = 0, category = 'greek', currentRoot = null, answered = false;
+        
+        const ROOTS = {
+            greek: [
+                { root: 'BIO', meaning: 'life', wrong: ['book', 'water', 'earth'], examples: ['biology', 'biography', 'antibiotic'] },
+                { root: 'GRAPH', meaning: 'write', wrong: ['speak', 'see', 'hear'], examples: ['autograph', 'photograph', 'graphic'] },
+                { root: 'PHON', meaning: 'sound', wrong: ['light', 'water', 'fire'], examples: ['telephone', 'phonics', 'symphony'] },
+                { root: 'LOGOS', meaning: 'word, study', wrong: ['number', 'color', 'shape'], examples: ['biology', 'dialogue', 'logic'] },
+                { root: 'HYDRO', meaning: 'water', wrong: ['fire', 'air', 'earth'], examples: ['hydrate', 'hydrogen', 'dehydrate'] },
+                { root: 'TELE', meaning: 'far, distant', wrong: ['near', 'small', 'quick'], examples: ['telephone', 'television', 'telescope'] },
+                { root: 'PHOTO', meaning: 'light', wrong: ['dark', 'sound', 'heat'], examples: ['photograph', 'photosynthesis', 'photon'] },
+                { root: 'CHRONO', meaning: 'time', wrong: ['space', 'color', 'sound'], examples: ['chronological', 'chronicle', 'chronic'] },
+                { root: 'GEO', meaning: 'earth', wrong: ['sky', 'water', 'fire'], examples: ['geography', 'geology', 'geometry'] },
+                { root: 'THERM', meaning: 'heat', wrong: ['cold', 'light', 'sound'], examples: ['thermometer', 'thermal', 'thermos'] },
+                { root: 'PSYCH', meaning: 'mind, soul', wrong: ['body', 'heart', 'hand'], examples: ['psychology', 'psychic', 'psychiatry'] },
+                { root: 'MORPH', meaning: 'form, shape', wrong: ['color', 'size', 'weight'], examples: ['metamorphosis', 'morphology', 'amorphous'] }
+            ],
+            latin: [
+                { root: 'SCRIB/SCRIPT', meaning: 'write', wrong: ['read', 'speak', 'draw'], examples: ['describe', 'manuscript', 'scripture'] },
+                { root: 'PORT', meaning: 'carry', wrong: ['push', 'pull', 'throw'], examples: ['transport', 'portable', 'export'] },
+                { root: 'DICT', meaning: 'say, speak', wrong: ['hear', 'see', 'think'], examples: ['dictate', 'predict', 'dictionary'] },
+                { root: 'JECT', meaning: 'throw', wrong: ['catch', 'hold', 'carry'], examples: ['reject', 'project', 'inject'] },
+                { root: 'SPECT', meaning: 'look, see', wrong: ['hear', 'touch', 'smell'], examples: ['inspect', 'spectator', 'respect'] },
+                { root: 'RUPT', meaning: 'break', wrong: ['fix', 'build', 'grow'], examples: ['interrupt', 'erupt', 'corrupt'] },
+                { root: 'DUCT', meaning: 'lead', wrong: ['follow', 'stop', 'hide'], examples: ['conduct', 'produce', 'educate'] },
+                { root: 'STRUCT', meaning: 'build', wrong: ['destroy', 'hide', 'move'], examples: ['construct', 'structure', 'instruct'] },
+                { root: 'TRACT', meaning: 'pull, drag', wrong: ['push', 'lift', 'throw'], examples: ['attract', 'subtract', 'tractor'] },
+                { root: 'VID/VIS', meaning: 'see', wrong: ['hear', 'touch', 'taste'], examples: ['video', 'visible', 'vision'] },
+                { root: 'CRED', meaning: 'believe', wrong: ['doubt', 'forget', 'ignore'], examples: ['credit', 'incredible', 'credible'] },
+                { root: 'MORT', meaning: 'death', wrong: ['life', 'birth', 'growth'], examples: ['mortal', 'mortuary', 'immortal'] }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('examples').classList.remove('visible');
+            
+            let roots = category === 'mixed' ? [...ROOTS.greek, ...ROOTS.latin] : ROOTS[category];
+            currentRoot = roots[Math.floor(Math.random() * roots.length)];
+            
+            const isGreek = ROOTS.greek.includes(currentRoot);
+            document.getElementById('rootDisplay').textContent = currentRoot.root;
+            document.getElementById('originDisplay').textContent = isGreek ? 'Greek Origin' : 'Latin Origin';
+            
+            const options = [currentRoot.meaning, ...currentRoot.wrong].sort(() => Math.random() - 0.5);
+            currentRoot.correctIndex = options.indexOf(currentRoot.meaning);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentRoot.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentRoot.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('examples').innerHTML = `<strong>${currentRoot.root}</strong> = "${currentRoot.meaning}"<div class="word-list">${currentRoot.examples.map(w => `<span class="word-tag">${w}</span>`).join('')}</div>`;
+            document.getElementById('examples').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = `💡 Example word: ${currentRoot.examples[0]}`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                category = btn.dataset.cat;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>

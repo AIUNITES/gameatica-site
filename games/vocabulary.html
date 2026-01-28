@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Vocabulary Builder - Gameatica</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/games.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+    <style>
+        .problem-display { text-align: center; padding: 25px 20px; }
+        .level-label { font-size: 0.9rem; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
+        .word-box { background: var(--dark); border-radius: 12px; padding: 30px; margin: 20px auto; max-width: 400px; }
+        .word-box .word { font-size: 2.5rem; font-weight: 700; background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
+        .word-box .pronunciation { color: var(--gray); font-size: 1rem; font-style: italic; }
+        .question-text { font-size: 1.1rem; color: var(--gray-light); margin: 20px 0; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 500px; margin: 0 auto; }
+        .option-btn { padding: 15px 20px; background: var(--dark); border: 2px solid rgba(255,255,255,0.1); border-radius: 10px; color: var(--white); font-size: 1rem; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .option-btn:hover { border-color: var(--primary); }
+        .option-btn.correct { border-color: var(--success); background: rgba(34, 197, 94, 0.2); }
+        .option-btn.wrong { border-color: var(--primary); background: rgba(239, 68, 68, 0.2); }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+        .feedback { margin-top: 20px; font-size: 1.1rem; min-height: 30px; }
+        .feedback.correct { color: var(--success); }
+        .feedback.wrong { color: var(--primary); }
+        .extra-info { background: rgba(255,255,255,0.03); border-radius: 10px; padding: 15px; margin-top: 15px; font-size: 0.95rem; color: var(--gray-light); max-width: 500px; margin-left: auto; margin-right: auto; display: none; text-align: left; }
+        .extra-info.visible { display: block; }
+        .extra-info strong { color: var(--white); }
+        .level-tabs { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .level-btn { padding: 8px 14px; background: var(--dark-card); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; color: var(--gray-light); cursor: pointer; transition: all 0.2s; font-size: 0.85rem; }
+        .level-btn:hover { border-color: var(--primary); color: var(--white); }
+        .level-btn.active { background: var(--gradient); border-color: transparent; color: var(--white); }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="../index.html" class="back-btn">← Back</a>
+            <h1>🎓 Vocabulary Builder</h1>
+        </div>
+        
+        <div class="score-bar">
+            <div class="score-item"><div class="label">Score</div><div class="value" id="score">0</div></div>
+            <div class="score-item"><div class="label">Correct</div><div class="value" id="correct">0</div></div>
+            <div class="score-item"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+            <div class="score-item"><div class="label">Best</div><div class="value" id="best">0</div></div>
+        </div>
+
+        <div class="level-tabs">
+            <button class="level-btn active" data-level="beginner">Beginner</button>
+            <button class="level-btn" data-level="intermediate">Intermediate</button>
+            <button class="level-btn" data-level="advanced">Advanced</button>
+            <button class="level-btn" data-level="expert">Expert</button>
+        </div>
+
+        <div class="game-board">
+            <div class="problem-display">
+                <div class="level-label" id="levelLabel">Beginner</div>
+                <div class="word-box">
+                    <div class="word" id="wordDisplay">WORD</div>
+                    <div class="pronunciation" id="pronunciation">/wɜːrd/</div>
+                </div>
+                <div class="question-text">What does this word mean?</div>
+                <div class="options-grid" id="optionsGrid"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="extra-info" id="extraInfo"></div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button class="btn btn-secondary" id="hintBtn">💡 Hint</button>
+            <button class="btn btn-primary" id="nextBtn" style="display:none;">Next →</button>
+        </div>
+
+        <div class="leaderboard"><h3>🏆 High Scores</h3><div id="leaderboard"></div></div>
+        <div class="instructions">
+            <h3>How to Play</h3>
+            <ul>
+                <li>Read the word and choose its correct definition</li>
+                <li>Build streaks for bonus points</li>
+                <li>Learn synonyms and example sentences</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="../js/cloud-database.js"></script>
+    <script src="../js/game-utils.js"></script>
+    <script>
+        const GAME_ID = 'vocabulary';
+        let score = 0, correctCount = 0, streak = 0, level = 'beginner', currentWord = null, answered = false;
+        
+        const WORDS = {
+            beginner: [
+                { word: 'ABUNDANT', pronunciation: '/əˈbʌndənt/', definition: 'Existing in large quantities; plentiful', wrong: ['Rare or scarce', 'Expensive or costly', 'Small or tiny'], synonym: 'plentiful', sentence: 'The garden had abundant flowers.' },
+                { word: 'CAUTIOUS', pronunciation: '/ˈkɔːʃəs/', definition: 'Careful to avoid danger or mistakes', wrong: ['Reckless and careless', 'Extremely fast', 'Very loud'], synonym: 'careful', sentence: 'She was cautious crossing the street.' },
+                { word: 'DILIGENT', pronunciation: '/ˈdɪlɪdʒənt/', definition: 'Showing careful and persistent effort', wrong: ['Lazy and unmotivated', 'Quick but sloppy', 'Loud and disruptive'], synonym: 'hardworking', sentence: 'The diligent student studied every night.' },
+                { word: 'ELABORATE', pronunciation: '/ɪˈlæbərət/', definition: 'Detailed and complicated in design', wrong: ['Simple and basic', 'Broken or damaged', 'Fast and quick'], synonym: 'intricate', sentence: 'She wore an elaborate costume.' },
+                { word: 'FEASIBLE', pronunciation: '/ˈfiːzəbəl/', definition: 'Possible and practical to do', wrong: ['Impossible to achieve', 'Extremely difficult', 'Against the rules'], synonym: 'achievable', sentence: 'The plan seemed feasible.' },
+                { word: 'GENUINE', pronunciation: '/ˈdʒenjuɪn/', definition: 'Truly what it is said to be; authentic', wrong: ['Fake or counterfeit', 'Borrowed temporarily', 'Partially completed'], synonym: 'authentic', sentence: 'This is a genuine leather bag.' },
+                { word: 'HESITANT', pronunciation: '/ˈhezɪtənt/', definition: 'Uncertain or slow in acting or speaking', wrong: ['Confident and sure', 'Extremely fast', 'Very angry'], synonym: 'reluctant', sentence: 'He was hesitant to answer.' },
+                { word: 'IMMENSE', pronunciation: '/ɪˈmens/', definition: 'Extremely large or great', wrong: ['Very small', 'Medium-sized', 'Slightly above average'], synonym: 'huge', sentence: 'The palace was immense.' }
+            ],
+            intermediate: [
+                { word: 'AMBIGUOUS', pronunciation: '/æmˈbɪɡjuəs/', definition: 'Open to more than one interpretation', wrong: ['Completely clear', 'Written in code', 'Extremely loud'], synonym: 'unclear', sentence: 'The message was ambiguous.' },
+                { word: 'BENEVOLENT', pronunciation: '/bəˈnevələnt/', definition: 'Well-meaning and kindly', wrong: ['Cruel and mean', 'Indifferent', 'Suspicious'], synonym: 'kind', sentence: 'The benevolent king helped the poor.' },
+                { word: 'COMPREHENSIVE', pronunciation: '/ˌkɒmprɪˈhensɪv/', definition: 'Including all or nearly all elements', wrong: ['Partial or incomplete', 'Extremely short', 'Only for experts'], synonym: 'thorough', sentence: 'She wrote a comprehensive report.' },
+                { word: 'DIMINISH', pronunciation: '/dɪˈmɪnɪʃ/', definition: 'Make or become less', wrong: ['Increase greatly', 'Stay the same', 'Explode suddenly'], synonym: 'reduce', sentence: 'The pain will diminish over time.' },
+                { word: 'ELOQUENT', pronunciation: '/ˈeləkwənt/', definition: 'Fluent and persuasive in speaking', wrong: ['Unable to speak', 'Speaking too fast', 'Speaking quietly'], synonym: 'articulate', sentence: 'She gave an eloquent speech.' },
+                { word: 'FORMIDABLE', pronunciation: '/ˈfɔːmɪdəbəl/', definition: 'Inspiring fear or respect through size or ability', wrong: ['Weak and powerless', 'Friendly and approachable', 'Small and cute'], synonym: 'intimidating', sentence: 'He was a formidable opponent.' },
+                { word: 'GREGARIOUS', pronunciation: '/ɡrɪˈɡeəriəs/', definition: 'Fond of company; sociable', wrong: ['Preferring solitude', 'Extremely shy', 'Unfriendly'], synonym: 'sociable', sentence: 'She was gregarious at parties.' },
+                { word: 'HYPOTHETICAL', pronunciation: '/ˌhaɪpəˈθetɪkəl/', definition: 'Based on an imagined situation', wrong: ['Based on proven facts', 'Historically accurate', 'Scientifically proven'], synonym: 'theoretical', sentence: 'Let\'s consider a hypothetical scenario.' }
+            ],
+            advanced: [
+                { word: 'ACQUIESCE', pronunciation: '/ˌækwiˈes/', definition: 'Accept something reluctantly without protest', wrong: ['Strongly refuse', 'Enthusiastically agree', 'Loudly complain'], synonym: 'comply', sentence: 'She acquiesced to their demands.' },
+                { word: 'CLANDESTINE', pronunciation: '/klænˈdestɪn/', definition: 'Kept secret or done secretively', wrong: ['Public and open', 'Legally required', 'Officially announced'], synonym: 'covert', sentence: 'They held a clandestine meeting.' },
+                { word: 'EPHEMERAL', pronunciation: '/ɪˈfemərəl/', definition: 'Lasting for a very short time', wrong: ['Lasting forever', 'Extremely important', 'Highly valuable'], synonym: 'fleeting', sentence: 'Fame can be ephemeral.' },
+                { word: 'IDIOSYNCRATIC', pronunciation: '/ˌɪdiəsɪŋˈkrætɪk/', definition: 'Peculiar to the individual', wrong: ['Common to everyone', 'Completely normal', 'Universally accepted'], synonym: 'quirky', sentence: 'He had idiosyncratic habits.' },
+                { word: 'METICULOUS', pronunciation: '/məˈtɪkjələs/', definition: 'Showing great attention to detail', wrong: ['Careless and sloppy', 'Quick and rushed', 'Random and chaotic'], synonym: 'precise', sentence: 'She was meticulous in her work.' },
+                { word: 'PERFUNCTORY', pronunciation: '/pəˈfʌŋktəri/', definition: 'Done without care or interest', wrong: ['Done with great enthusiasm', 'Completed perfectly', 'Performed professionally'], synonym: 'cursory', sentence: 'He gave a perfunctory nod.' },
+                { word: 'SURREPTITIOUS', pronunciation: '/ˌsʌrəpˈtɪʃəs/', definition: 'Kept secret because improper', wrong: ['Done openly', 'Legally sanctioned', 'Publicly celebrated'], synonym: 'stealthy', sentence: 'She cast a surreptitious glance.' },
+                { word: 'UBIQUITOUS', pronunciation: '/juːˈbɪkwɪtəs/', definition: 'Present everywhere', wrong: ['Extremely rare', 'Found in one place', 'Never seen'], synonym: 'omnipresent', sentence: 'Smartphones are ubiquitous.' }
+            ],
+            expert: [
+                { word: 'ANACHRONISTIC', pronunciation: '/əˌnækrəˈnɪstɪk/', definition: 'Belonging to a different time period', wrong: ['Perfectly timed', 'Modern and current', 'Futuristic'], synonym: 'outdated', sentence: 'The knight\'s armor looked anachronistic in the modern city.' },
+                { word: 'CAPRICIOUS', pronunciation: '/kəˈprɪʃəs/', definition: 'Given to sudden changes of mood or behavior', wrong: ['Steady and predictable', 'Always reliable', 'Permanently fixed'], synonym: 'fickle', sentence: 'The capricious weather ruined our plans.' },
+                { word: 'DELETERIOUS', pronunciation: '/ˌdelɪˈtɪəriəs/', definition: 'Causing harm or damage', wrong: ['Extremely beneficial', 'Completely neutral', 'Mildly helpful'], synonym: 'harmful', sentence: 'Smoking has deleterious effects.' },
+                { word: 'LOQUACIOUS', pronunciation: '/ləʊˈkweɪʃəs/', definition: 'Tending to talk a great deal', wrong: ['Extremely quiet', 'Unable to speak', 'Speaking rarely'], synonym: 'talkative', sentence: 'The loquacious host entertained everyone.' },
+                { word: 'OBSEQUIOUS', pronunciation: '/əbˈsiːkwiəs/', definition: 'Excessively compliant or eager to please', wrong: ['Rebellious and defiant', 'Independent minded', 'Casually indifferent'], synonym: 'servile', sentence: 'The obsequious assistant annoyed everyone.' },
+                { word: 'PERSPICACIOUS', pronunciation: '/ˌpɜːspɪˈkeɪʃəs/', definition: 'Having keen insight or discernment', wrong: ['Lacking understanding', 'Easily confused', 'Mentally slow'], synonym: 'perceptive', sentence: 'Her perspicacious analysis impressed us.' },
+                { word: 'RECALCITRANT', pronunciation: '/rɪˈkælsɪtrənt/', definition: 'Stubbornly resistant to authority', wrong: ['Completely obedient', 'Easily controlled', 'Always agreeable'], synonym: 'defiant', sentence: 'The recalcitrant child refused to eat.' },
+                { word: 'VICISSITUDE', pronunciation: '/vɪˈsɪsɪtjuːd/', definition: 'A change of circumstances, typically unwelcome', wrong: ['Permanent stability', 'Guaranteed success', 'Constant happiness'], synonym: 'fluctuation', sentence: 'Life is full of vicissitudes.' }
+            ]
+        };
+        
+        function generateProblem() {
+            answered = false;
+            document.getElementById('nextBtn').style.display = 'none';
+            document.getElementById('extraInfo').classList.remove('visible');
+            
+            const words = WORDS[level];
+            currentWord = words[Math.floor(Math.random() * words.length)];
+            
+            document.getElementById('levelLabel').textContent = level.charAt(0).toUpperCase() + level.slice(1);
+            document.getElementById('wordDisplay').textContent = currentWord.word;
+            document.getElementById('pronunciation').textContent = currentWord.pronunciation;
+            
+            const options = [currentWord.definition, ...currentWord.wrong].sort(() => Math.random() - 0.5);
+            currentWord.correctIndex = options.indexOf(currentWord.definition);
+            
+            document.getElementById('optionsGrid').innerHTML = options.map((opt, i) => 
+                `<button class="option-btn" data-index="${i}">${opt}</button>`
+            ).join('');
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.addEventListener('click', () => checkAnswer(parseInt(btn.dataset.index), btn));
+            });
+            
+            document.getElementById('feedback').textContent = '';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        function checkAnswer(index, btn) {
+            if (answered) return;
+            answered = true;
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            
+            if (index === currentWord.correctIndex) {
+                btn.classList.add('correct');
+                correctCount++; streak++;
+                const points = 100 + streak * 20;
+                score += points;
+                document.getElementById('feedback').textContent = `✓ Correct! +${points} points`;
+                document.getElementById('feedback').className = 'feedback correct';
+                GameUtils.playSound('point');
+            } else {
+                btn.classList.add('wrong');
+                document.querySelectorAll('.option-btn')[currentWord.correctIndex].classList.add('correct');
+                streak = 0;
+                document.getElementById('feedback').textContent = '✗ Incorrect';
+                document.getElementById('feedback').className = 'feedback wrong';
+                GameUtils.playSound('gameover');
+            }
+            
+            document.getElementById('extraInfo').innerHTML = `<strong>Synonym:</strong> ${currentWord.synonym}<br><strong>Example:</strong> "${currentWord.sentence}"`;
+            document.getElementById('extraInfo').classList.add('visible');
+            document.getElementById('nextBtn').style.display = 'inline-flex';
+            updateUI();
+        }
+        
+        function showHint() {
+            document.getElementById('feedback').textContent = `💡 Synonym: ${currentWord.synonym}`;
+        }
+        
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correctCount;
+            document.getElementById('streak').textContent = streak;
+            document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        }
+        
+        document.getElementById('hintBtn').addEventListener('click', showHint);
+        document.getElementById('nextBtn').addEventListener('click', generateProblem);
+        
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                level = btn.dataset.level;
+                score = 0; correctCount = 0; streak = 0;
+                updateUI();
+                generateProblem();
+            });
+        });
+        
+        document.getElementById('best').textContent = GameUtils.getPersonalBest(GAME_ID);
+        GameUtils.renderLeaderboard(GAME_ID, 'leaderboard');
+        generateProblem();
+    </script>
+</body>
+</html>
