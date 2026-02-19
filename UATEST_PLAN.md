@@ -7,8 +7,8 @@
 | **Repository** | gameatica-site |
 | **Live URL** | https://aiunites.github.io/gameatica-site/ |
 | **Local Path** | C:/Users/Tom/Documents/GitHub/gameatica-site |
-| **Last Updated** | January 25, 2026 |
-| **Version** | 2.0.0 |
+| **Last Updated** | February 19, 2026 |
+| **Version** | 2.8.0 |
 | **Based On** | Custom Arcade |
 
 ---
@@ -585,6 +585,11 @@
 | 2.2.0 | Jan 25, 2026 | Added 6 Math Learning Games (25 games total) |
 | 2.3.0 | Jan 25, 2026 | Added 6 more Math Games (31 games total) |
 | 2.5.0 | Jan 25, 2026 | Added Auth System (login, profile, admin) |
+| 2.6.0 | Jan 25, 2026 | SQL Database leaderboards, game_scores table, cloud sync |
+| 2.7.0 | Jan 25, 2026 | Added 4 English Learning Games (35 games total) |
+| 2.7.1 | Feb 13, 2026 | Webring: Added VoiceStry+BodSpas to 16-site webring |
+| 2.7.2 | Feb 14, 2026 | Webring: Removed BodSpas, updated to 16-site canonical |
+| 2.8.0 | Feb 15, 2026 | Legal compliance: all footer links to centralized legal.html |
 
 ---
 
@@ -597,5 +602,5 @@
 
 ---
 
-*Document Version: 2.0*
-*Last Updated: January 25, 2026*
+*Document Version: 2.1*
+*Last Updated: February 19, 2026*
