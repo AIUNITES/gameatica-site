@@ -469,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Get unit IDs from: AdSense > Ads > By ad unit > Create new ad unit
 // ============================================================
 (function() {
-    const PUBLISHER_ID    = 'ca-pub-XXXXXXXXXXXXXXXX'; // ← REPLACE
+    const PUBLISHER_ID    = 'ca-pub-4573596965267859';
     const AD_SLOT_ABOVE   = 'XXXXXXXXXX';              // ← REPLACE (leaderboard/responsive, above game)
     const AD_SLOT_BELOW   = 'XXXXXXXXXX';              // ← REPLACE (rectangle/responsive, below game)
 
