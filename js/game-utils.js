@@ -456,3 +456,82 @@ document.addEventListener('DOMContentLoaded', () => {
         CloudDB.init({ siteName: 'Gameatica' });
     }
 });
+
+// ============================================================
+// GAMEATICA ADSENSE INTEGRATION
+// Injected via game-utils.js — applies to all 49 game pages.
+//
+// SETUP (3 steps):
+//   1. Replace PUBLISHER_ID with your ca-pub-XXXXXXXXXXXXXXXX
+//   2. Replace AD_SLOT_ABOVE with your leaderboard/banner unit ID
+//   3. Replace AD_SLOT_BELOW with your rectangle/square unit ID
+//
+// Get unit IDs from: AdSense > Ads > By ad unit > Create new ad unit
+// ============================================================
+(function() {
+    const PUBLISHER_ID    = 'ca-pub-XXXXXXXXXXXXXXXX'; // ← REPLACE
+    const AD_SLOT_ABOVE   = 'XXXXXXXXXX';              // ← REPLACE (leaderboard/responsive, above game)
+    const AD_SLOT_BELOW   = 'XXXXXXXXXX';              // ← REPLACE (rectangle/responsive, below game)
+
+    // Skip on localhost / file:// to avoid AdSense warnings during dev
+    const isLocal = location.protocol === 'file:'
+        || location.hostname === 'localhost'
+        || location.hostname === '127.0.0.1';
+    if (isLocal) return;
+
+    // Don't run if publisher ID hasn't been filled in yet
+    if (PUBLISHER_ID.includes('XXXX')) return;
+
+    // Inject AdSense library once into <head>
+    function loadAdSenseScript() {
+        if (document.querySelector('script[src*="adsbygoogle"]')) return;
+        const s = document.createElement('script');
+        s.async = true;
+        s.crossOrigin = 'anonymous';
+        s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + PUBLISHER_ID;
+        document.head.appendChild(s);
+    }
+
+    // Build a responsive ad unit element
+    function createAdUnit(slotId, className) {
+        const wrap = document.createElement('div');
+        wrap.className = 'ad-container ' + className;
+        const ins = document.createElement('ins');
+        ins.className = 'adsbygoogle';
+        ins.style.display = 'block';
+        ins.dataset.adClient = PUBLISHER_ID;
+        ins.dataset.adSlot = slotId;
+        ins.dataset.adFormat = 'auto';
+        ins.dataset.fullWidthResponsive = 'true';
+        wrap.appendChild(ins);
+        return wrap;
+    }
+
+    function injectAds() {
+        const adsbygoogle = window.adsbygoogle = window.adsbygoogle || [];
+
+        // Position 1: Between score-bar and game-board (seen before play starts)
+        const gameBoard = document.querySelector('.game-board');
+        if (gameBoard && AD_SLOT_ABOVE && !AD_SLOT_ABOVE.includes('X')) {
+            const adTop = createAdUnit(AD_SLOT_ABOVE, 'ad-above-game');
+            gameBoard.parentNode.insertBefore(adTop, gameBoard);
+            adsbygoogle.push({});
+        }
+
+        // Position 2: Between leaderboard and instructions (seen after game over)
+        const instructions = document.querySelector('.instructions');
+        if (instructions && AD_SLOT_BELOW && !AD_SLOT_BELOW.includes('X')) {
+            const adBottom = createAdUnit(AD_SLOT_BELOW, 'ad-below-game');
+            instructions.parentNode.insertBefore(adBottom, instructions);
+            adsbygoogle.push({});
+        }
+    }
+
+    loadAdSenseScript();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectAds);
+    } else {
+        injectAds();
+    }
+})();
