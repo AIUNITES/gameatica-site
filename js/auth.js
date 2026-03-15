@@ -9,7 +9,7 @@ const Auth = {
    * Register new user
    * Saves to both localStorage and SQL database (if available)
    */
-  signup(displayName, username, email, password) {
+  async signup(displayName, username, email, password) {
     if (!displayName || displayName.length < 2) {
       throw new Error('Display name must be at least 2 characters');
     }
@@ -36,20 +36,13 @@ const Auth = {
       throw new Error('Username already taken');
     }
 
-    // Create user in localStorage
-    const user = Storage.createUser({
-      displayName,
-      username,
-      email,
-      password
-    });
-
-    // Also save to SQL database if available
-    this.saveUserToSQL(user, password);
-
+    const passwordHash = await PasswordUtils.hash(password);
+    const user = Storage.createUser({ displayName, username, email, passwordHash });
+    await this.saveUserToSQL(user, password);
     Storage.setCurrentUser(user.username);
     return user;
   },
+
 
   /**
    * Check if username exists in SQL database
@@ -76,18 +69,19 @@ const Auth = {
   /**
    * Save user to SQL database
    */
-  saveUserToSQL(user, password) {
+  async saveUserToSQL(user, password) {
     if (typeof SQLDatabase === 'undefined' || !SQLDatabase.isLoaded || !SQLDatabase.db) {
       return false;
     }
     
     try {
+      const passwordHash = await PasswordUtils.hash(password);
       SQLDatabase.db.run(`
         INSERT INTO users (username, password_hash, display_name, email, role, created_at, site)
         VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
       `, [
         user.username,
-        password,
+        passwordHash,
         user.displayName,
         user.email || '',
         user.isAdmin ? 'admin' : 'user',
@@ -119,7 +113,7 @@ const Auth = {
    * Login user
    * Checks localStorage first, then SQL database if available
    */
-  login(username, password) {
+  async login(username, password) {
     if (!username || !password) {
       throw new Error('Please enter username and password');
     }
@@ -128,12 +122,19 @@ const Auth = {
     let user = Storage.getUserByUsername(username);
     
     if (user) {
-      // Found in localStorage - check password
-      if (user.password !== password) {
-        throw new Error('Incorrect password');
+      let valid = false;
+      if (user.passwordHash) {
+        valid = await PasswordUtils.verify(password, user.passwordHash);
+      } else if (user.password) {
+        valid = (user.password === password);
+        if (valid) {
+          const migrated = await PasswordUtils.migrate(user, password);
+          Storage.updateUser(user.username, migrated);
+        }
       }
+      if (!valid) throw new Error('Incorrect password');
       Storage.setCurrentUser(user.username);
-      return user;
+      return Storage.getUserByUsername(user.username);
     }
     
     // Not found in localStorage - try SQL database if available
@@ -188,24 +189,18 @@ const Auth = {
    * Demo login
    * Tries SQL database first for demo user, then falls back to default
    */
-  loginDemo() {
+  async loginDemo() {
     const demo = APP_CONFIG.defaultDemo;
-    
-    // Try to login (will check SQL database too)
     try {
-      return this.login(demo.username, demo.password);
+      return await this.login(demo.username, demo.password);
     } catch (e) {
-      // If demo user doesn't exist anywhere, create it locally
-      console.log('[Auth] Creating local demo user');
-      const user = Storage.createUser({
-        displayName: demo.displayName,
-        username: demo.username,
-        email: demo.email,
-        password: demo.password,
-        isAdmin: demo.isAdmin
-      });
-      Storage.setCurrentUser(user.username);
-      return user;
+      if (e.message === 'User not found') {
+        const passwordHash = await PasswordUtils.hash(demo.password);
+        const user = Storage.createUser({ displayName: demo.displayName, username: demo.username, email: demo.email, passwordHash, isAdmin: demo.isAdmin });
+        Storage.setCurrentUser(user.username);
+        return user;
+      }
+      throw e;
     }
   },
 
