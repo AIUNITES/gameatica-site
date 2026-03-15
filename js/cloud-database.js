@@ -27,7 +27,7 @@ const CloudDB = {
   },
   packData(type, data) {
     switch (type.toUpperCase()) {
-      case 'USER': return `USER|${data.username}|${data.email}|${data.password || ''}|${data.firstName || ''}|${data.lastName || ''}|${data.role || 'user'}|${data.createdAt || new Date().toISOString()}`;
+      case 'USER': return `USER|${data.username}|${data.email}||${data.firstName || ''}|${data.lastName || ''}|${data.role || 'user'}|${data.createdAt || new Date().toISOString()}`;
       case 'SCORE': return `SCORE|${data.username}|${data.displayName}|${data.score}|${data.correct}|${data.wrong}|${data.streak}|${data.mode}|${data.timestamp || new Date().toISOString()}`;
       case 'FEEDBACK': return `FEEDBACK|${data.message}`;
       case 'WAITLIST': return `WAITLIST|${data.email}|${data.name || ''}|${data.source || this.config.siteName}|${new Date().toISOString()}`;

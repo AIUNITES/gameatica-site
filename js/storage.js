@@ -106,7 +106,7 @@ const Storage = {
       username: username,
       displayName: userData.displayName,
       email: userData.email || '',
-      password: userData.password,
+      passwordHash: userData.passwordHash, // set by Auth.signup after hashing
       isAdmin: userData.isAdmin || false,
       createdAt: new Date().toISOString(),
       settings: {},
@@ -244,10 +244,16 @@ const Storage = {
   // ==================== EXPORT/IMPORT ====================
 
   exportData() {
+    const rawUsers = this.getAll(this.KEYS.USERS);
+    const safeUsers = {};
+    Object.entries(rawUsers).forEach(([k, u]) => {
+      const { password, passwordHash, ...safe } = u;
+      safeUsers[k] = safe;
+    });
     return {
       version: APP_CONFIG.version,
       app: APP_CONFIG.name,
-      users: this.getAll(this.KEYS.USERS),
+      users: safeUsers,
       scores: this.getAll(this.KEYS.SCORES),
       settings: this.getAll(this.KEYS.SETTINGS),
       exportedAt: new Date().toISOString()
