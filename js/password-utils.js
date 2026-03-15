@@ -14,6 +14,16 @@ const PasswordUtils = {
     delete migrated.password;
     return migrated;
   },
-  sanitize(user) { const { password, passwordHash, ...safe } = user; return safe; }
+  sanitize(user) { const { password, passwordHash, ...safe } = user; return safe; },
+  generate() {
+    const words = ['Coral','Ember','Flint','Grove','Haven','Ivory','Jade','Kite',
+      'Lapis','Maple','Nova','Orbit','Prism','Quill','Rune','Solar',
+      'Terra','Ultra','Vapor','Waltz','Xenon','Yield','Zinc','Amber',
+      'Birch','Cedar','Delta','Echo','Frost','Glyph','Helix','Indigo'];
+    const symbols = ['!','@','#','$','%','&','*'];
+    const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const digit = () => Math.floor(Math.random() * 10);
+    return rand(words) + rand(symbols) + digit() + digit() + rand(words) + rand(symbols) + rand(words);
+  }
 };
 window.PasswordUtils = PasswordUtils;
