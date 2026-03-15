@@ -299,48 +299,61 @@ const App = {
   switchAuthTab(tab) {
     document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
     document.querySelector(`.auth-tab[data-tab="${tab}"]`)?.classList.add('active');
-    
     document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
     document.getElementById(`${tab}-form`)?.classList.add('active');
+    if (tab === 'signup') this.injectGeneratedPassword();
   },
 
-  handleLogin(e) {
+  injectGeneratedPassword() {
+    if (typeof PasswordUtils === 'undefined') return;
+    const pw = document.getElementById('signup-password');
+    const cf = document.getElementById('signup-confirm');
+    if (!pw || pw.value) return;
+    const v = PasswordUtils.generate();
+    pw.value = v; if (cf) cf.value = v;
+    pw.type = 'text'; if (cf) cf.type = 'text';
+    document.getElementById('pw-suggest-bar')?.remove();
+    const bar = document.createElement('div'); bar.id = 'pw-suggest-bar';
+    bar.style.cssText = 'margin-top:8px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:8px 12px;font-size:0.8rem;color:#c4b5fd;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    bar.innerHTML = '<span>🔐 Secure password generated.</span><span style="flex:1"></span><button type="button" id="pw-copy-btn" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.4);color:#e9d5ff;border-radius:6px;padding:3px 10px;font-size:0.78rem;cursor:pointer;font-family:inherit;">📋 Copy</button><button type="button" id="pw-regen-btn" style="background:rgba(139,92,246,0.25);border:1px solid rgba(139,92,246,0.4);color:#e9d5ff;border-radius:6px;padding:3px 10px;font-size:0.78rem;cursor:pointer;font-family:inherit;">🔄 New</button>';
+    pw.parentElement.appendChild(bar);
+    document.getElementById('pw-copy-btn').addEventListener('click', () => { navigator.clipboard.writeText(pw.value).then(() => { const b = document.getElementById('pw-copy-btn'); if(b){b.textContent='✅ Copied!';setTimeout(()=>{b.textContent='📋 Copy';},2000);} }); });
+    document.getElementById('pw-regen-btn').addEventListener('click', () => { const n = PasswordUtils.generate(); pw.value = n; if(cf) cf.value = n; });
+  },
+
+  async handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('login-username').value.trim();
     const password = document.getElementById('login-password').value;
-
+    const btn = e.target.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
     try {
-      Auth.login(username, password);
+      await Auth.login(username, password);
       this.closeAuthModal();
       this.showToast('Welcome back!', 'success');
       this.checkAuth();
-      this.loadGlobalLeaderboards(); // Refresh to highlight user
+      this.loadGlobalLeaderboards();
     } catch (error) {
       document.getElementById('login-error').textContent = error.message;
-    }
+    } finally { if (btn) btn.disabled = false; }
   },
 
-  handleSignup(e) {
+  async handleSignup(e) {
     e.preventDefault();
     const displayName = document.getElementById('signup-name').value.trim();
-    const username = document.getElementById('signup-username').value.trim();
-    const email = document.getElementById('signup-email').value.trim();
-    const password = document.getElementById('signup-password').value;
-    const confirm = document.getElementById('signup-confirm').value;
-
-    if (password !== confirm) {
-      document.getElementById('signup-error').textContent = 'Passwords do not match';
-      return;
-    }
-
+    const username    = document.getElementById('signup-username').value.trim();
+    const email       = document.getElementById('signup-email').value.trim();
+    const password    = document.getElementById('signup-password').value;
+    const confirm     = document.getElementById('signup-confirm').value;
+    if (password !== confirm) { document.getElementById('signup-error').textContent = 'Passwords do not match'; return; }
+    const btn = e.target.querySelector('[type="submit"]'); if (btn) btn.disabled = true;
     try {
-      Auth.signup(displayName, username, email, password);
+      await Auth.signup(displayName, username, email, password);
       this.closeAuthModal();
       this.showToast('Welcome to Gameatica!', 'success');
       this.checkAuth();
     } catch (error) {
       document.getElementById('signup-error').textContent = error.message;
-    }
+    } finally { if (btn) btn.disabled = false; }
   },
 
   loginAsDemo() {
