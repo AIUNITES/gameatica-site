@@ -7,8 +7,8 @@ a { color: inherit; text-decoration: none; }
 .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
 .nav-logo { display: flex; align-items: center; gap: 0.5rem; font-size: 1.5rem; font-weight: 700; }
 .accent { background: var(--gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.nav-links { display: flex; gap: 2rem; }
-.nav-links a { color: var(--gray-light); font-weight: 500; }
+.nav-links { display: flex; gap: 1.25rem; flex-wrap: nowrap; }
+.nav-links a { color: var(--gray-light); font-weight: 500; white-space: nowrap; }
 .nav-links a:hover { color: var(--white); }
 .hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8rem 2rem 4rem; background: radial-gradient(ellipse at 50% 50%, rgba(239,68,68,0.1), transparent 70%); }
 .hero-content { max-width: 800px; }
