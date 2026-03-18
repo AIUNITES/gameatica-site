@@ -298,7 +298,7 @@
                 <a href="compare.html" style="color:#ef4444;font-weight:700;font-size:0.9rem;">⚖️ Compare Games</a>
                 <button class="btn-login" id="nav-login-btn" style="display:none;">Login</button>
             </div>
-            <button class="nav-hamburger" id="gm-hbg" aria-label="Menu" onclick="this.classList.toggle('open');document.getElementById('gm-nav').classList.toggle('open')"><span></span><span></span><span></span></button>
+            <button class="nav-hamburger" id="gm-hbg" aria-label="Menu" onclick="var m=document.getElementById('gm-nav');m.style.top=this.closest('nav').getBoundingClientRect().bottom+'px';this.classList.toggle('open');m.classList.toggle('open')"><span></span><span></span><span></span></button>
         </div>
     </nav>
     
